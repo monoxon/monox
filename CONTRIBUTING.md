@@ -42,8 +42,7 @@ monox/
 │   │   ├── mod.rs          # 核心模块导出
 │   │   ├── analyzer.rs     # 依赖关系分析器
 │   │   ├── cache.rs        # 执行状态缓存管理
-│   │   ├── executor.rs     # 任务执行器
-│   │   └── scheduler.rs    # 任务调度器
+│   │   └── executor.rs     # 任务执行器
 │   ├── models/             # 数据模型
 │   │   ├── mod.rs          # 模型模块导出
 │   │   ├── config.rs       # 配置数据结构
@@ -101,20 +100,7 @@ fn calculate_stages(dependency_graph: &Graph) -> Vec<Vec<Package>> {
 }
 ```
 
-#### 2. 任务调度器 (scheduler.rs)
-
-**职责**：
-- 根据任务配置和依赖关系制定执行计划
-- 按阶段调度任务执行
-- 管理并发执行和资源分配
-- 处理任务失败和错误恢复
-
-**设计模式**：
-- 使用 Actor 模式管理任务状态
-- 基于 tokio 的异步任务调度
-- 支持可配置的并发限制
-
-#### 3. 任务执行器 (executor.rs)
+#### 2. 任务执行器 (executor.rs)
 
 **职责**：
 - 执行具体的构建任务
@@ -128,7 +114,7 @@ fn calculate_stages(dependency_graph: &Graph) -> Vec<Vec<Package>> {
 - 实时输出流处理
 - 性能监控集成
 
-#### 4. 缓存管理 (cache.rs)
+#### 3. 缓存管理 (cache.rs)
 
 **职责**：
 - 进程内跟踪已完成和正在运行的任务

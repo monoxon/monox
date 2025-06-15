@@ -66,7 +66,7 @@ impl DependencyAnalyzer {
     }
 
     /// 分析工作区依赖关系
-    pub fn analyze(&mut self) -> Result<DependencyAnalysisResult> {
+    pub fn analyze_workspace(&mut self) -> Result<DependencyAnalysisResult> {
         let start_time = Instant::now();
 
         if self.verbose {
@@ -369,17 +369,6 @@ impl DependencyAnalyzer {
         stages
     }
 
-    /// 扫描单个包（用于单包分析）
-    pub fn scan_single_package(&self, package_path: &Path) -> Result<WorkspacePackage> {
-        let package_json_path = package_path.join("package.json");
-
-        if !package_json_path.exists() {
-            anyhow::bail!("指定路径不包含 package.json: {}", package_path.display());
-        }
-
-        self.parse_package_json(&package_json_path)
-    }
-
     /// 分析单个包（通过包名）
     pub fn analyze_single_package(
         &mut self,
@@ -392,7 +381,7 @@ impl DependencyAnalyzer {
         }
 
         // 1. 执行完整的工作区分析以获得正确的依赖关系
-        let full_result = self.analyze()?;
+        let full_result = self.analyze_workspace()?;
 
         // 2. 查找目标包
         let target_package = full_result
@@ -514,10 +503,5 @@ impl DependencyAnalyzer {
                 }
             }
         }
-    }
-
-    /// 获取工作区根目录
-    pub fn workspace_root(&self) -> &Path {
-        &self.workspace_root
     }
 }

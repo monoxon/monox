@@ -21,3 +21,4 @@ pub mod fs;
 pub mod logger;
 pub mod npm;
 pub mod performance;
+pub mod spinner;

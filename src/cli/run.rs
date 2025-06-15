@@ -12,4 +12,36 @@
 //
 // ============================================================================
 
-// TODO: 实现 run 命令
+use anyhow::Result;
+use clap::Args;
+
+use crate::core::TaskExecutor;
+use crate::utils::logger::Logger;
+use crate::{t, tf};
+
+/// 运行脚本命令
+#[derive(Debug, Args)]
+pub struct RunArgs {
+    /// 要执行的脚本命令 (如: build, dev, test) - must
+    #[arg(short = 'c', long)]
+    pub command: String,
+
+    /// 目标包名列表 (如果不指定，将运行所有包含该脚本的包) - no must
+    #[arg(short = 'p', long)]
+    pub package_name: Option<String>,
+
+    /// 是否运行所有包 - no must
+    #[arg(short = 'a', long)]
+    pub all: bool,
+}
+
+pub fn run(args: RunArgs) -> Result<()> {
+    Logger::info(tf!("run.start", &args.command));
+
+    let executor = TaskExecutor::new_from_config()?;
+    match (args.all, args.package_name) {
+        (true, _) => executor.execute("*", &args.command, Some(true)),
+        (false, Some(package_name)) => executor.execute(&package_name, &args.command, Some(false)),
+        (false, None) => anyhow::bail!(t!("run.missing_package_or_all")),
+    }
+}

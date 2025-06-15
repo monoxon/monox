@@ -18,7 +18,7 @@
 pub mod analyzer;
 pub mod cache;
 pub mod executor;
-pub mod scheduler;
 
 // 重新导出常用类型
 pub use analyzer::DependencyAnalyzer;
+pub use executor::TaskExecutor;

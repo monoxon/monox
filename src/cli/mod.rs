@@ -16,13 +16,19 @@
 // ============================================================================
 
 pub mod analyze;
+pub mod check;
+pub mod fix;
 pub mod init;
+pub mod run;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use analyze::{handle_analyze, AnalyzeArgs};
+use check::{handle_check, CheckArgs};
+use fix::{handle_fix, FixArgs};
 use init::{handle_init, InitArgs};
+use run::{run, RunArgs};
 
 /// MonoX - 轻量级 monorepo 构建工具
 #[derive(Debug, Parser)]
@@ -75,8 +81,14 @@ pub struct Cli {
 pub enum Commands {
     /// 分析工作区依赖关系
     Analyze(AnalyzeArgs),
+    /// 检查工作区健康状态
+    Check(CheckArgs),
+    /// 自动修复版本冲突
+    Fix(FixArgs),
     /// 初始化配置文件
     Init(InitArgs),
+    /// 运行脚本
+    Run(RunArgs),
 }
 
 pub fn run_cli() -> Result<()> {
@@ -84,14 +96,16 @@ pub fn run_cli() -> Result<()> {
 
     // 构建运行时参数来覆盖配置
     let runtime_args = build_runtime_args(&cli);
-
     // 合并运行时参数到全局配置
     use crate::models::config::Config;
     Config::merge_runtime_args(runtime_args)?;
 
     match cli.command {
         Commands::Analyze(args) => handle_analyze(args),
+        Commands::Check(args) => handle_check(args),
+        Commands::Fix(args) => handle_fix(args),
         Commands::Init(args) => handle_init(args),
+        Commands::Run(args) => run(args),
     }
 }
 

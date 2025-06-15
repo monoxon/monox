@@ -17,6 +17,8 @@
 
 pub mod config;
 pub mod package;
+pub mod task;
 
 // 重新导出常用类型
 pub use package::DependencyAnalysisResult;
+pub use task::{Task, TaskConfig, TaskResult, TaskStatus};

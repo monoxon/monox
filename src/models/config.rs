@@ -52,7 +52,7 @@ pub struct WorkspaceConfig {
     pub root: String,
     /// 包管理器类型
     #[serde(default)]
-    pub package_manager: String,
+    pub package_manager: PackageManager,
     /// 排除扫描的目录或文件模式
     #[serde(default)]
     pub ignore: Vec<String>,
@@ -124,6 +124,132 @@ pub struct RuntimeArgs {
     pub workspace_root: Option<String>,
     pub language: Option<String>,
 }
+
+/// 包管理器类型枚举
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageManager {
+    /// pnpm 包管理器
+    Pnpm,
+    /// yarn 包管理器  
+    Yarn,
+    /// npm 包管理器
+    Npm,
+}
+
+impl PackageManager {
+    /// 获取包管理器命令字符串
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            PackageManager::Pnpm => "pnpm",
+            PackageManager::Yarn => "yarn",
+            PackageManager::Npm => "npm",
+        }
+    }
+
+    /// 从字符串解析包管理器
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "pnpm" => Ok(PackageManager::Pnpm),
+            "yarn" => Ok(PackageManager::Yarn),
+            "npm" => Ok(PackageManager::Npm),
+            _ => Err(format!("不支持的包管理器: {}，仅支持 pnpm、yarn、npm", s)),
+        }
+    }
+
+    /// 获取所有支持的包管理器
+    pub fn all() -> &'static [PackageManager] {
+        &[
+            PackageManager::Pnpm,
+            PackageManager::Yarn,
+            PackageManager::Npm,
+        ]
+    }
+}
+
+impl Default for PackageManager {
+    fn default() -> Self {
+        PackageManager::Pnpm
+    }
+}
+
+impl std::fmt::Display for PackageManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+/// 配置默认值 trait - 不依赖全局配置初始化
+pub trait ConfigDefaults {
+    /// 获取默认工作区根目录
+    fn default_workspace_root() -> PathBuf {
+        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+    }
+
+    /// 获取默认包管理器
+    fn default_package_manager() -> PackageManager {
+        PackageManager::Pnpm
+    }
+
+    /// 获取默认忽略模式
+    fn default_ignore_patterns() -> Vec<String> {
+        vec![
+            ".git".to_string(),
+            "node_modules".to_string(),
+            "target".to_string(),
+            "dist".to_string(),
+            "build".to_string(),
+            ".next".to_string(),
+            ".nuxt".to_string(),
+            "coverage".to_string(),
+            "*.log".to_string(),
+            "tmp".to_string(),
+            "temp".to_string(),
+        ]
+    }
+
+    /// 获取默认最大并发数
+    fn default_max_concurrency() -> usize {
+        num_cpus::get()
+    }
+
+    /// 获取默认任务超时时间
+    fn default_task_timeout() -> u32 {
+        300
+    }
+
+    /// 获取默认重试次数
+    fn default_retry_count() -> u32 {
+        1
+    }
+
+    /// 获取默认是否失败时继续
+    fn default_continue_on_failure() -> bool {
+        false
+    }
+
+    /// 获取默认是否显示进度条
+    fn default_show_progress() -> bool {
+        true
+    }
+
+    /// 获取默认是否详细输出
+    fn default_verbose() -> bool {
+        false
+    }
+
+    /// 获取默认是否彩色输出
+    fn default_colored() -> bool {
+        true
+    }
+
+    /// 获取默认语言
+    fn default_language() -> String {
+        "en_us".to_string()
+    }
+}
+
+impl ConfigDefaults for Config {}
 
 impl Config {
     /// 初始化全局配置（程序启动时调用）
@@ -199,59 +325,31 @@ impl Config {
 
     /// 生成默认配置模板
     pub fn generate_default_template() -> Self {
-        Self {
-            workspace: WorkspaceConfig {
-                root: ".".to_string(),
-                package_manager: "pnpm".to_string(),
-                ignore: vec![
-                    ".git".to_string(),
-                    "node_modules".to_string(),
-                    "target".to_string(),
-                    "dist".to_string(),
-                    "build".to_string(),
-                    ".next".to_string(),
-                    ".nuxt".to_string(),
-                    "coverage".to_string(),
-                    "*.log".to_string(),
-                    "tmp".to_string(),
-                    "temp".to_string(),
-                ],
+        let mut config = Self::default();
+
+        // 添加示例任务
+        config.tasks = vec![
+            TaskConfig {
+                name: "build".to_string(),
+                pkg_name: "*".to_string(),
+                desc: Some("构建所有包".to_string()),
+                command: "npm run build".to_string(),
             },
-            tasks: vec![
-                TaskConfig {
-                    name: "build".to_string(),
-                    pkg_name: "*".to_string(),
-                    desc: Some("构建所有包".to_string()),
-                    command: "npm run build".to_string(),
-                },
-                TaskConfig {
-                    name: "test".to_string(),
-                    pkg_name: "*".to_string(),
-                    desc: Some("运行测试".to_string()),
-                    command: "npm run test".to_string(),
-                },
-                TaskConfig {
-                    name: "lint".to_string(),
-                    pkg_name: "*".to_string(),
-                    desc: Some("代码检查".to_string()),
-                    command: "npm run lint".to_string(),
-                },
-            ],
-            execution: ExecutionConfig {
-                max_concurrency: num_cpus::get(),
-                task_timeout: 300,
-                retry_count: 1,
-                continue_on_failure: false,
+            TaskConfig {
+                name: "test".to_string(),
+                pkg_name: "*".to_string(),
+                desc: Some("运行测试".to_string()),
+                command: "npm run test".to_string(),
             },
-            output: OutputConfig {
-                show_progress: true,
-                verbose: false,
-                colored: true,
+            TaskConfig {
+                name: "lint".to_string(),
+                pkg_name: "*".to_string(),
+                desc: Some("代码检查".to_string()),
+                command: "npm run lint".to_string(),
             },
-            i18n: I18nConfig {
-                language: "en_us".to_string(),
-            },
-        }
+        ];
+
+        config
     }
 
     /// 生成默认配置模板并保存到文件
@@ -261,8 +359,16 @@ impl Config {
         Ok(())
     }
 
-    /// 获取工作区根目录
-    pub fn get_workspace_root() -> anyhow::Result<PathBuf> {
+    /// 获取工作区根目录（带默认值）
+    pub fn get_workspace_root() -> PathBuf {
+        match Self::get_workspace_root_from_config() {
+            Ok(root) => root,
+            _ => Self::default_workspace_root(),
+        }
+    }
+
+    /// 从配置获取工作区根目录（可能失败）
+    fn get_workspace_root_from_config() -> anyhow::Result<PathBuf> {
         let global_config = GLOBAL_CONFIG
             .get()
             .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
@@ -334,8 +440,16 @@ impl Config {
         Ok(config.i18n.language.clone())
     }
 
-    /// 获取最大并发数
-    pub fn get_max_concurrency() -> anyhow::Result<usize> {
+    /// 获取最大并发数（带默认值）
+    pub fn get_max_concurrency() -> usize {
+        match Self::get_max_concurrency_from_config() {
+            Ok(concurrency) => concurrency,
+            _ => Self::default_max_concurrency(),
+        }
+    }
+
+    /// 从配置获取最大并发数（可能失败）
+    fn get_max_concurrency_from_config() -> anyhow::Result<usize> {
         let global_config = GLOBAL_CONFIG
             .get()
             .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
@@ -399,8 +513,16 @@ impl Config {
         Ok(config.output.show_progress)
     }
 
-    /// 获取是否详细输出
-    pub fn get_verbose() -> anyhow::Result<bool> {
+    /// 获取详细输出设置（带默认值）
+    pub fn get_verbose() -> bool {
+        match Self::get_verbose_from_config() {
+            Ok(verbose) => verbose,
+            _ => Self::default_verbose(),
+        }
+    }
+
+    /// 从配置获取详细输出设置（可能失败）
+    fn get_verbose_from_config() -> anyhow::Result<bool> {
         let global_config = GLOBAL_CONFIG
             .get()
             .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
@@ -425,8 +547,16 @@ impl Config {
         Ok(config.output.colored)
     }
 
-    /// 获取包管理器类型
-    pub fn get_package_manager() -> anyhow::Result<String> {
+    /// 获取包管理器类型（带默认值）
+    pub fn get_package_manager() -> PackageManager {
+        match Self::get_package_manager_from_config() {
+            Ok(pm) => pm,
+            _ => Self::default_package_manager(),
+        }
+    }
+
+    /// 从配置获取包管理器（可能失败）
+    fn get_package_manager_from_config() -> anyhow::Result<PackageManager> {
         let global_config = GLOBAL_CONFIG
             .get()
             .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
@@ -437,16 +567,49 @@ impl Config {
 
         Ok(config.workspace.package_manager.clone())
     }
+
+    /// 获取任务配置
+    pub fn get_task_config(task_name: &str) -> anyhow::Result<TaskConfig> {
+        let global_config = GLOBAL_CONFIG
+            .get()
+            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+
+        let config = global_config
+            .read()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire config read lock"))?;
+
+        config
+            .tasks
+            .iter()
+            .find(|task| task.name == task_name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("Task {} not found", task_name))
+    }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            workspace: WorkspaceConfig::default(),
+            workspace: WorkspaceConfig {
+                root: ".".to_string(),
+                package_manager: Self::default_package_manager(),
+                ignore: Self::default_ignore_patterns(),
+            },
             tasks: Vec::new(),
-            execution: ExecutionConfig::default(),
-            output: OutputConfig::default(),
-            i18n: I18nConfig::default(),
+            execution: ExecutionConfig {
+                max_concurrency: Self::default_max_concurrency(),
+                task_timeout: Self::default_task_timeout(),
+                retry_count: Self::default_retry_count(),
+                continue_on_failure: Self::default_continue_on_failure(),
+            },
+            output: OutputConfig {
+                show_progress: Self::default_show_progress(),
+                verbose: Self::default_verbose(),
+                colored: Self::default_colored(),
+            },
+            i18n: I18nConfig {
+                language: Self::default_language(),
+            },
         }
     }
 }
@@ -455,8 +618,8 @@ impl Default for WorkspaceConfig {
     fn default() -> Self {
         Self {
             root: ".".to_string(),
-            package_manager: "npm".to_string(),
-            ignore: vec!["node_modules".to_string(), ".git".to_string()],
+            package_manager: Config::default_package_manager(),
+            ignore: Config::default_ignore_patterns(),
         }
     }
 }
@@ -464,10 +627,10 @@ impl Default for WorkspaceConfig {
 impl Default for ExecutionConfig {
     fn default() -> Self {
         Self {
-            max_concurrency: 1,
-            task_timeout: 60,
-            retry_count: 0,
-            continue_on_failure: false,
+            max_concurrency: Config::default_max_concurrency(),
+            task_timeout: Config::default_task_timeout(),
+            retry_count: Config::default_retry_count(),
+            continue_on_failure: Config::default_continue_on_failure(),
         }
     }
 }
@@ -475,9 +638,9 @@ impl Default for ExecutionConfig {
 impl Default for OutputConfig {
     fn default() -> Self {
         Self {
-            show_progress: false,
-            verbose: false,
-            colored: false,
+            show_progress: Config::default_show_progress(),
+            verbose: Config::default_verbose(),
+            colored: Config::default_colored(),
         }
     }
 }
@@ -485,8 +648,7 @@ impl Default for OutputConfig {
 impl Default for I18nConfig {
     fn default() -> Self {
         Self {
-            // 默认使用英文
-            language: "en_us".to_string(),
+            language: Config::default_language(),
         }
     }
 }

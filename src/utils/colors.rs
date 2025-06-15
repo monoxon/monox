@@ -23,6 +23,7 @@ pub mod ansi {
 
     /// 前景色
     pub const RED: &str = "\x1b[31m";
+    pub const GREEN: &str = "\x1b[32m";
     pub const YELLOW: &str = "\x1b[33m";
     pub const CYAN: &str = "\x1b[36m";
 }
@@ -39,6 +40,9 @@ pub mod log_colors {
 
     /// 错误日志颜色 (红色)
     pub const ERROR: &str = ansi::RED;
+
+    /// 成功日志颜色 (绿色)
+    pub const SUCCESS: &str = ansi::GREEN;
 }
 
 /// 颜色工具函数
@@ -63,5 +67,10 @@ impl Colors {
     /// 错误颜色
     pub fn error(text: &str) -> String {
         Self::colorize(text, log_colors::ERROR)
+    }
+
+    /// 成功颜色
+    pub fn success(text: &str) -> String {
+        Self::colorize(text, log_colors::SUCCESS)
     }
 }

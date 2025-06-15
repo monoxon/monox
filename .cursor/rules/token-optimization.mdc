@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # 🎯 Token 优化核心策略
 
@@ -18,6 +18,7 @@ alwaysApply: false
 - 使用 emoji + 结构化布局替代长段落
 - 代码示例 > 冗长解释
 - 删除冗余上下文和重复信息
+- 写入失败的文件, 记录内容重新写入, 不要浪费 token
 
 ## 🎯 精准内容定位
 - 使用精确 glob 模式自动附加

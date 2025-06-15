@@ -25,6 +25,7 @@ use anyhow::Result;
 use models::config::Config;
 
 fn main() -> Result<()> {
+    use crate::utils::logger::Logger;
     // 初始化配置
     Config::initialize()?;
 

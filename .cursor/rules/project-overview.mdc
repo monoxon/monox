@@ -32,8 +32,7 @@ monox/
 │   │   ├── mod.rs          # 核心模块导出
 │   │   ├── analyzer.rs     # 依赖关系分析器
 │   │   ├── cache.rs        # 缓存管理
-│   │   ├── executor.rs     # 任务执行器
-│   │   └── scheduler.rs    # 任务调度器
+│   │   └── executor.rs     # 任务执行器
 │   ├── models/             # 数据模型
 │   │   ├── mod.rs          # 模型模块导出
 │   │   ├── config.rs       # 配置数据结构
@@ -76,7 +75,6 @@ monox/
 
 ### 核心引擎
 - **DependencyAnalyzer** - 依赖关系分析，构建有向无环图
-- **TaskScheduler** - 任务调度，生成执行计划
 - **TaskExecutor** - 任务执行器，支持并发执行和进度追踪
 - **Cache** - 缓存系统，提升重复操作性能
 

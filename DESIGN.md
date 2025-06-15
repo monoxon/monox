@@ -126,7 +126,6 @@ workspace_packages 获取方案：
 #### 核心引擎层
 
 - **DependencyAnalyzer**: 依赖关系分析和图构建
-- **TaskScheduler**: 任务调度和执行计划
 - **TaskExecutor**: 任务执行和状态管理
 - **CacheManager**: 缓存策略和状态持久化
 

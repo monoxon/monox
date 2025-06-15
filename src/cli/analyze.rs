@@ -46,10 +46,10 @@ pub fn handle_analyze(args: AnalyzeArgs) -> Result<()> {
     Logger::info(t!("cli.analyze.start"));
 
     // 获取工作区根目录（从全局配置中获取）
-    let workspace_root = Config::get_workspace_root()?;
+    let workspace_root = Config::get_workspace_root();
 
     // 获取verbose设置（从全局配置中获取）
-    let verbose = Config::get_verbose()?;
+    let verbose = Config::get_verbose();
 
     if !workspace_root.exists() {
         anyhow::bail!(tf!("error.workspace_not_exist", workspace_root.display()));
@@ -63,7 +63,7 @@ pub fn handle_analyze(args: AnalyzeArgs) -> Result<()> {
         analyzer.analyze_single_package(&package_name)?
     } else {
         // 全工作区分析
-        analyzer.analyze()?
+        analyzer.analyze_workspace()?
     };
 
     // 输出结果

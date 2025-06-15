@@ -18,6 +18,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::path::PathBuf;
 
 /// 工作区包信息
@@ -117,11 +118,6 @@ impl WorkspacePackage {
     pub fn add_workspace_dependency(&mut self, dep_name: String) {
         self.workspace_dependencies.insert(dep_name);
     }
-
-    /// 检查是否有指定的构建脚本
-    pub fn has_script(&self, script_name: &str) -> bool {
-        self.scripts.contains_key(script_name)
-    }
 }
 
 impl PackageJson {
@@ -147,6 +143,14 @@ impl PackageJson {
     /// 获取版本，如果没有则使用默认版本
     pub fn get_version(&self) -> String {
         self.version.clone().unwrap_or_else(|| "0.0.0".to_string())
+    }
+    pub fn from_file(package_path: &str) -> Self {
+        let package_json = fs::read_to_string(&format!("{}/package.json", package_path)).unwrap();
+        serde_json::from_str(&package_json).unwrap()
+    }
+
+    pub fn has_script(&self, script_name: &str) -> bool {
+        self.scripts.contains_key(script_name)
     }
 }
 

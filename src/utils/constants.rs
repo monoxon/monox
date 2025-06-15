@@ -55,6 +55,10 @@ pub mod icons {
     pub const TIME: &str = "⧖";
     /// 性能图标
     pub const PERF: &str = "⧗";
+    /// 箭头图标
+    pub const ARROW: &str = "→";
+    /// 汇总图标
+    pub const SUMMARY: &str = "◈";
 }
 
 /// 进度条字符

@@ -1,4 +1,6 @@
 {
+  "name": "@test/pkg1",
+  "version": "1.0.0",
   "dependencies": {
     "@test/pkg2": "workspace:*",
     "axios": "^1.10.0",
@@ -8,10 +10,8 @@
     "jest": "^30.0.0",
     "typescript": "^5.8.3"
   },
-  "name": "@test/pkg1",
   "scripts": {
     "build": "echo 'Building pkg1'",
-    "test": "echo 'Testing pkg1'"
-  },
-  "version": "1.0.0"
+    "test": "jest"
+  }
 }

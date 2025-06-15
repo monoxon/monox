@@ -33,4 +33,8 @@ impl Logger {
     pub fn error<S: AsRef<str>>(msg: S) {
         eprintln!("{} {}", Colors::error("[ERROR]"), msg.as_ref());
     }
+
+    pub fn success<S: AsRef<str>>(msg: S) {
+        println!("{} {}", Colors::success("[MONOX]"), msg.as_ref());
+    }
 }
