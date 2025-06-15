@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 注意事项
+
+## 编码要求
+
+### 模块编码约束
+- 每新建一个模块文件, 都要加上头文件, 明确业务职责边界
+- 留意当前编码文件的业务职责边界, 不要编写不符合当前模块的业务到当前文件中
+- 不要在文件末尾编写单元测试
+
+### 终端日志打印
+- 所有打印均使用 logger + i18n 规范进行打印
+
+```rust
+use crate::i18n::{t, tf};
+use crate::utils::logger::Logger;
+
+// 简单文本
+Logger::info(t!("analyze.start"));
+
+
+// 带参数的文本
+Logger::info(tf!("analyze.found_packages", packages.len()))
+```
+
+### 图标使用
+- 不要使用 emoji, 需要图案的地方全部使用像素图标
+- 图标位于 ui/constants.rs
+
+## 构建规则
+
+### 🚨 重要：构建行为约定
+
+**AI 助手不应主动触发构建命令**：
+- ❌ 不要执行 `cargo build`、`cargo make build`、`cargo run`、`cargo make run`
+- ✅ 可以执行 `cargo check`、`cargo make check`、`cargo make fmt`、`cargo make lint`
+
+### 原因
+- 开发者通常保持 `cargo make dev` watch 模式运行
+- 避免构建冲突和资源浪费
+
+### 正确协作方式
+- 需要构建输出时：询问开发者运行 `cargo make build` 或检查 dev watch 输出
+- 验证代码：使用 `cargo make check` 进行快速检查
+- 提醒开发者：建议执行相应的 cargo make 命令
+
+## 删除操作
+
+### 文件删除
+- 任何文件删除都需要经过开发者确认
+
+## 需求变更
+
+### 需求代码编写
+
+- 不要擅自更改需求

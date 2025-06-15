@@ -1,0 +1,145 @@
+[config]
+default_to_workspace = false
+min_version = "0.36.0"
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.help]
+description = "显示所有可用命令"
+script = '''
+echo "MonoX 开发工具命令："
+echo ""
+echo "开发命令："
+echo "  cargo make dev          - 开发模式（文件监听 + 检查 + 格式化）"
+echo "  cargo make dev-test     - 开发模式（文件监听 + 检查 + 测试）"
+echo "  cargo make build        - 构建项目"
+echo "  cargo make run          - 运行项目 (使用 ARGS 环境变量传参)"
+echo "  cargo make test         - 运行测试"
+echo "  cargo make check        - 快速检查代码（不生成二进制文件）"
+echo ""
+echo "代码质量："
+echo "  cargo make fmt          - 格式化代码"
+echo "  cargo make lint         - 静态检查"
+echo "  cargo make ci           - 完整 CI 检查（格式化 + 静态检查 + 测试）"
+echo ""
+echo "发布命令："
+echo "  cargo make release      - 构建发布版本"
+echo "  cargo make install      - 安装到系统"
+echo "  cargo make clean        - 清理构建文件"
+echo ""
+echo "工具命令："
+echo "  cargo make doc          - 生成文档"
+echo "  cargo make setup        - 设置开发环境"
+echo "  cargo make profile      - 性能分析构建"
+echo "  cargo make bench        - 运行基准测试"
+echo "  cargo make update       - 更新依赖"
+echo "  cargo make audit        - 安全审计"
+echo ""
+echo "示例："
+echo "  ARGS='analyze' cargo make run"
+echo "  ARGS='--help' cargo make run"
+'''
+
+[tasks.dev]
+description = "开发模式 - 文件监听和自动重新构建"
+install_crate = "cargo-watch"
+command = "cargo-watch"
+args = ["-x", "check", "-x", "fmt", "-x", "build"]
+
+[tasks.dev-test]
+description = "开发模式 - 包含测试的文件监听"
+install_crate = "cargo-watch"
+command = "cargo-watch"
+args = ["-x", "check", "-x", "test"]
+
+[tasks.build]
+description = "构建项目"
+command = "cargo"
+args = ["build"]
+
+[tasks.run]
+description = "运行项目"
+command = "cargo"
+args = ["run", "--", "${ARGS}"]
+env = { "ARGS" = "" }
+
+[tasks.test]
+description = "运行测试"
+command = "cargo"
+args = ["test"]
+
+[tasks.check]
+description = "快速检查代码（不生成二进制文件）"
+command = "cargo"
+args = ["check"]
+
+[tasks.fmt]
+description = "格式化代码"
+command = "cargo"
+args = ["fmt"]
+
+[tasks.lint]
+description = "静态检查"
+command = "cargo"
+args = ["clippy", "--", "-D", "warnings"]
+
+[tasks.ci]
+description = "完整 CI 检查"
+dependencies = ["fmt", "lint", "test"]
+
+[tasks.release]
+description = "构建发布版本"
+command = "cargo"
+args = ["build", "--release"]
+
+[tasks.install]
+description = "安装到系统"
+command = "cargo"
+args = ["install", "--path", "."]
+
+[tasks.clean]
+description = "清理构建文件"
+command = "cargo"
+args = ["clean"]
+
+[tasks.doc]
+description = "生成文档"
+command = "cargo"
+args = ["doc", "--open"]
+
+[tasks.setup]
+description = "设置开发环境"
+script = '''
+echo "安装开发工具..."
+cargo install cargo-watch
+cargo install cargo-edit
+cargo install cargo-audit
+echo "开发环境设置完成！"
+'''
+
+[tasks.profile]
+description = "性能分析构建"
+command = "cargo"
+args = ["build", "--release", "--profile", "profiling"]
+
+[tasks.bench]
+description = "运行基准测试"
+command = "cargo"
+args = ["bench"]
+
+[tasks.update]
+description = "更新依赖"
+command = "cargo"
+args = ["update"]
+
+[tasks.audit]
+description = "安全审计"
+install_crate = "cargo-audit"
+command = "cargo"
+args = ["audit"]
+
+[tasks.test-verbose]
+description = "详细测试输出"
+command = "cargo"
+args = ["test", "--", "--nocapture"] 

@@ -1,0 +1,115 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 编码标准
+
+## Rust 代码风格
+
+### 命名约定
+- 使用 `snake_case` 命名变量和函数
+- 使用 `PascalCase` 命名结构体、枚举和 trait
+- 使用 `SCREAMING_SNAKE_CASE` 命名常量
+- 模块名使用 `snake_case`
+
+### 代码组织
+```rust
+// 标准导入顺序
+use std::collections::HashMap;  // 标准库
+use tokio::fs;                  // 外部 crate
+use crate::models::Task;        // 本地模块
+```
+
+### 警告处理
+- 没用的变量名(若没有后续使用)就删了, 不要加 "_" 处理
+
+### 错误处理模式
+```rust
+// 使用 Result 类型
+pub async fn execute_task(task: &Task) -> anyhow::Result<()> {
+    // 实现逻辑
+    Ok(())
+}
+
+// 自定义错误类型
+#[derive(thiserror::Error, Debug)]
+pub enum MonoxError {
+    #[error("配置文件读取失败: {0}")]
+    ConfigError(String),
+    #[error("任务执行失败: {task_name}")]
+    TaskError { task_name: String },
+}
+```
+
+### 日志打印
+- 统一使用 logger + i8n 进行打印
+- 不要用 emoji 输出图案, 使用极客风像素点图案
+
+```rust
+use crate::i18n::{t, tf};
+use crate::utils::logger::Logger;
+
+// 简单文本
+Logger::info(t!("analyze.start"));
+
+
+// 带参数的文本
+Logger::info(tf!("analyze.found_packages", packages.len()))
+```
+
+## 文档约定
+
+### 函数文档
+```rust
+/// 执行指定的构建任务
+/// 
+/// # 参数
+/// * `task` - 要执行的任务配置
+/// * `workspace_root` - 工作区根目录路径
+/// 
+/// # 返回值
+/// 成功时返回 `Ok(())`，失败时返回错误信息
+/// 
+/// # 示例
+/// ```
+/// let task = Task::new("build");
+/// execute_task(&task, "./").await?;
+/// ```
+pub async fn execute_task(task: &Task, workspace_root: &str) -> anyhow::Result<()> {
+    // 实现
+}
+```
+
+### 结构体文档
+```rust
+/// 任务配置结构
+/// 
+/// 包含任务的基本信息和执行参数
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct Task {
+    /// 任务名称
+    pub name: String,
+    /// 包名称
+    pub pkg_name: String,
+    /// 任务描述
+    pub desc: String,
+    /// 执行命令
+    pub command: String,
+}
+```
+
+## 性能和并发
+
+### 异步编程最佳实践
+- 对于 I/O 操作使用 `async/await`
+- 使用 `tokio::task::spawn` 处理 CPU 密集型任务
+- 合理使用 `Arc` 和 `Mutex` 共享状态
+- 避免在异步函数中使用阻塞操作
+
+### 内存管理
+- 优先使用借用而不是拥有权转移
+- 合理使用 `Cow` 类型避免不必要的克隆
+- 对于大数据结构考虑使用 `Box` 或 `Arc`
+
+

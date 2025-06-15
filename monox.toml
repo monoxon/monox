@@ -1,0 +1,48 @@
+[workspace]
+root = "."
+package_manager = "pnpm"
+ignore = [
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "coverage",
+    "*.log",
+    "tmp",
+    "temp",
+]
+
+[[tasks]]
+name = "build"
+pkg_name = "*"
+desc = "构建所有包"
+command = "npm run build"
+
+[[tasks]]
+name = "test"
+pkg_name = "*"
+desc = "运行测试"
+command = "npm run test"
+
+[[tasks]]
+name = "lint"
+pkg_name = "*"
+desc = "代码检查"
+command = "npm run lint"
+
+[execution]
+max_concurrency = 10
+task_timeout = 300
+retry_count = 1
+continue_on_failure = false
+
+[output]
+show_progress = true
+verbose = false
+colored = true
+
+[i18n]
+language = "zh_cn"

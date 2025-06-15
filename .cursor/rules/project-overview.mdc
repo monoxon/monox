@@ -1,0 +1,176 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# MonoX 项目概览
+
+## 项目简介
+MonoX 是一个用 Rust 编写的轻量级 monorepo 构建工具，专门用于管理多包项目的依赖关系分析、构建任务编排和并发执行。支持 pnpm、npm、yarn 等主流包管理器，提供完整的国际化支持（中文/英文）。
+
+## 核心配置文件
+- **[Cargo.toml](mdc:Cargo.toml)** - Rust 项目配置，包含所有依赖和项目元信息
+- **[monox.toml](mdc:monox.toml)** - MonoX 特定配置，定义工作区、任务、并发设置和国际化选项
+
+## 项目架构
+
+### 目录结构
+```
+monox/
+├── src/
+│   ├── main.rs              # 主入口点
+│   ├── cli/                 # 命令行接口模块
+│   │   ├── mod.rs          # CLI 主模块和参数解析
+│   │   ├── analyze.rs      # 依赖分析命令
+│   │   ├── check.rs        # 检查命令（版本冲突、循环依赖、过期包）
+│   │   ├── exec.rs         # 执行预定义任务命令
+│   │   ├── fix.rs          # 修复命令（版本不一致等）
+│   │   ├── init.rs         # 初始化配置命令
+│   │   ├── run.rs          # 运行指定命令
+│   │   └── update.rs       # 更新依赖命令
+│   ├── core/               # 核心功能模块
+│   │   ├── mod.rs          # 核心模块导出
+│   │   ├── analyzer.rs     # 依赖关系分析器
+│   │   ├── cache.rs        # 缓存管理
+│   │   ├── executor.rs     # 任务执行器
+│   │   └── scheduler.rs    # 任务调度器
+│   ├── models/             # 数据模型
+│   │   ├── mod.rs          # 模型模块导出
+│   │   ├── config.rs       # 配置数据结构
+│   │   └── package.rs      # 包信息数据结构
+│   ├── utils/              # 工具函数
+│   │   ├── mod.rs          # 工具模块导出
+│   │   ├── colors.rs       # 颜色输出工具
+│   │   ├── constants.rs    # 常量定义
+│   │   ├── fs.rs           # 文件系统工具
+│   │   ├── logger.rs       # 统一日志系统
+│   │   ├── npm.rs          # 包管理器工具
+│   │   └── performance.rs  # 性能监控工具
+│   ├── i18n/               # 国际化支持
+│   │   ├── mod.rs          # 国际化主模块
+│   │   ├── zh_cn.rs        # 中文翻译
+│   │   └── en_us.rs           # 英文翻译
+│   └── ui/                 # 用户界面
+│       ├── mod.rs          # UI 模块导出
+│       ├── runner.rs      # 非 verbose 模式终端输出 UI
+│       └── verbose.rs      # 详细输出组件
+├── test-packages/          # 测试用的示例包
+├── target/                 # Rust 构建输出目录
+├── Cargo.toml             # Rust 项目配置
+├── monox.toml             # MonoX 配置文件
+├── DESIGN.md              # 设计文档
+├── TODO.md                # 待办事项
+└── package.json           # Node.js 兼容性配置
+```
+
+## 核心功能模块
+
+### CLI 命令系统
+- **analyze** - 分析依赖关系并生成构建阶段
+- **check** - 检查版本冲突、循环依赖、过期包
+- **exec** - 执行预定义任务（从 monox.toml 读取）
+- **fix** - 修复版本不一致等问题
+- **init** - 初始化 MonoX 配置文件
+- **run** - 运行指定命令（自动解析依赖）
+- **update** - 更新包依赖到最新版本
+
+### 核心引擎
+- **DependencyAnalyzer** - 依赖关系分析，构建有向无环图
+- **TaskScheduler** - 任务调度，生成执行计划
+- **TaskExecutor** - 任务执行器，支持并发执行和进度追踪
+- **Cache** - 缓存系统，提升重复操作性能
+
+### 数据模型
+- **Config** - 配置管理（工作区、任务、执行参数）
+- **Package** - 包信息模型（依赖、脚本、版本）
+- **Language** - 语言枚举（中文/英文）
+- **PackageManager** - 包管理器枚举（pnpm/npm/yarn）
+
+### 工具系统
+- **Logger** - 统一日志系统，支持多级别和国际化
+- **ColorHelper** - 颜色输出工具，提升用户体验
+- **FileSystemHelper** - 文件系统操作工具
+- **PackageManagerHelper** - 包管理器操作工具
+- **PerformanceMonitor** - 性能监控和优化工具
+
+### 用户界面
+- **ProgressDisplay** - 实时进度显示，支持动画和任务状态
+- **VerboseDisplay** - 详细输出模式，适合调试
+
+## 技术特性
+
+### 依赖管理
+- 自动检测工作区包结构
+- 智能依赖关系分析
+- 循环依赖检测和报告
+- 版本冲突检测和修复
+
+### 任务执行
+- 基于依赖关系的智能调度
+- 可配置的并发执行
+- 实时进度追踪
+- 失败重试机制
+- 超时控制
+
+### 包管理器支持
+- **pnpm** - 默认推荐，性能最佳
+- **npm** - 广泛兼容
+- **yarn** - 企业级支持
+
+### 国际化
+- 完整的中文/英文双语支持
+- 动态语言切换
+- 所有用户界面文本国际化
+
+### 性能优化
+- 智能缓存机制
+- 并发任务执行
+- 内存使用优化
+- 操作性能监控
+
+## 配置说明
+
+### monox.toml 配置结构
+```toml
+[workspace]
+root = "."                    # 工作区根目录
+package_manager = "pnpm"      # 包管理器选择
+
+[[tasks]]                     # 预定义任务
+name = "build-all"
+pkg_name = "*"               # * 表示所有包
+command = "build"
+
+[execution]                   # 执行配置
+max_concurrency = 10         # 最大并发数
+task_timeout = 300           # 任务超时（秒）
+continue_on_failure = false  # 失败时是否继续
+
+[output]                      # 输出配置
+show_progress = true         # 显示进度
+verbose = false              # 详细模式
+colored = true               # 彩色输出
+
+[i18n]                        # 国际化配置
+language = "zh_cn"           # 界面语言
+```
+
+## 开发指南
+
+### 代码组织原则
+- **模块化设计** - 每个功能独立模块
+- **错误处理** - 使用 `anyhow` 和 `thiserror` 统一错误处理
+- **异步支持** - 基于 `tokio` 的异步运行时
+- **类型安全** - 充分利用 Rust 类型系统
+- **国际化优先** - 所有用户可见文本都支持国际化
+
+### 扩展指南
+- **新增命令** - 在 `src/cli/` 下添加新模块
+- **新增功能** - 在 `src/core/` 下扩展核心功能
+- **新增语言** - 在 `src/i18n/` 下添加翻译文件
+- **新增工具** - 在 `src/utils/` 下添加工具函数
+
+### 测试策略
+- 使用 `test-packages/` 目录进行集成测试
+- 单元测试覆盖核心算法
+- 端到端测试验证完整工作流

@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@test/pkg2": "workspace:*",
+    "axios": "^1.10.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "typescript": "^5.8.3"
+  },
+  "name": "@test/pkg1",
+  "scripts": {
+    "build": "echo 'Building pkg1'",
+    "test": "echo 'Testing pkg1'"
+  },
+  "version": "1.0.0"
+}

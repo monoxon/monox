@@ -1,0 +1,1 @@
+{"name": "pkg3", "version": "1.0.0", "dependencies": {"@test/pkg2": "workspace:*"}, "scripts": {"build": "echo Building pkg3"}}

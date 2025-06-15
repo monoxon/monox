@@ -1,0 +1,75 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 开发工作流规则
+
+## 项目构建工具
+
+### 开发模式选择
+- **cargo make dev**: 轻量级开发模式，只进行代码检查和格式化，适合日常开发
+- **cargo make dev-test**: 完整开发模式，包含测试运行，适合 TDD 开发
+
+### Cargo Make 常用命令
+```bash
+cargo make help       # 查看所有可用命令
+cargo make dev        # 开发模式（推荐）- 文件监听 + 检查 + 格式化
+cargo make dev-test   # 开发模式（包含测试）- 文件监听 + 检查 + 测试
+cargo make check      # 快速检查代码（不生成二进制文件）
+cargo make test       # 运行测试
+cargo make fmt        # 格式化代码
+cargo make lint       # 静态检查
+ARGS='analyze' cargo make run  # 运行项目
+```
+
+## AI 助手构建规则
+
+### 🚨 重要：构建行为约定
+
+**AI 助手不应主动触发构建命令**：
+- ❌ 不要执行 `cargo build`、`cargo make build`、`cargo run`、`cargo make run`
+- ✅ 可以执行 `cargo check`、`cargo make check`、`cargo make fmt`、`cargo make lint`
+
+### 原因
+- 开发者通常保持 `cargo make dev` watch 模式运行
+- 避免构建冲突和资源浪费
+
+### 正确协作方式
+- 需要构建输出时：询问开发者运行 `cargo make build` 或检查 dev watch 输出
+- 验证代码：使用 `cargo make check` 进行快速检查
+- 提醒开发者：建议执行相应的 cargo make 命令
+
+## 代码结构约定
+
+### 模块组织
+- `src/main.rs` - 程序入口点
+- `src/core/` - 核心业务逻辑（任务调度、依赖解析）
+- `src/cli/` - 命令行界面（clap 框架）
+- `src/models/` - 数据结构定义
+- `src/utils/` - 通用工具函数
+- `src/i18n/` - 国际化支持
+- `src/ui/` - 用户界面组件
+
+### 编程规范
+- **错误处理**: 使用 `anyhow` 和 `thiserror`，返回 `Result<T, E>`
+- **异步编程**: 使用 `tokio` 运行时，I/O 操作用异步函数
+- **国际化**: 用户可见文本必须使用 `t!()` 或 `tf!()` 宏
+
+## 开发环境
+
+### 快速开始
+```bash
+cargo make setup      # 安装开发工具
+cargo make dev        # 启动开发模式
+```
+
+### 提交前检查
+```bash
+cargo make ci         # 完整检查（格式化 + 静态检查 + 测试）
+```
+
+## 配置管理
+- 项目配置：[monox.toml](mdc:monox.toml)
+- 支持工作区配置、任务定义、国际化设置
+- 配置变更需重启程序
