@@ -223,6 +223,14 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("run.all_success", "所有包执行成功！"),
     ("run.partial_success", "部分包执行成功"),
     ("run.completed", "脚本执行完成"),
+    ("run.missing_package_or_all", "必须指定包名或使用 --all 参数"),
+    // Exec 命令相关
+    ("exec.start", "开始执行预定义任务: {}"),
+    ("exec.task_not_found", "未找到任务定义: {}"),
+    ("exec.task_found", "找到任务 '{}': {}"),
+    ("exec.task_description", "任务描述: {}"),
+    ("exec.executing_all_packages", "在所有包中执行任务"),
+    ("exec.executing_package", "在包 '{}' 中执行任务"),
     // 调度器相关
     ("scheduler.task_start", "开始执行任务: {}"),
     ("scheduler.task_success", "任务执行成功: {}，耗时 {:.2}s"),

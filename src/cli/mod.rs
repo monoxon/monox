@@ -17,6 +17,7 @@
 
 pub mod analyze;
 pub mod check;
+pub mod exec;
 pub mod fix;
 pub mod init;
 pub mod run;
@@ -26,6 +27,7 @@ use clap::{Parser, Subcommand};
 
 use analyze::{handle_analyze, AnalyzeArgs};
 use check::{handle_check, CheckArgs};
+use exec::{exec, ExecArgs};
 use fix::{handle_fix, FixArgs};
 use init::{handle_init, InitArgs};
 use run::{run, RunArgs};
@@ -83,6 +85,8 @@ pub enum Commands {
     Analyze(AnalyzeArgs),
     /// 检查工作区健康状态
     Check(CheckArgs),
+    /// 执行预定义任务
+    Exec(ExecArgs),
     /// 自动修复版本冲突
     Fix(FixArgs),
     /// 初始化配置文件
@@ -103,6 +107,7 @@ pub async fn run_cli() -> Result<()> {
     match cli.command {
         Commands::Analyze(args) => handle_analyze(args),
         Commands::Check(args) => handle_check(args),
+        Commands::Exec(args) => exec(args).await,
         Commands::Fix(args) => handle_fix(args),
         Commands::Init(args) => handle_init(args),
         Commands::Run(args) => run(args).await,

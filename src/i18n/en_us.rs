@@ -253,6 +253,14 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("run.all_success", "All packages executed successfully!"),
     ("run.partial_success", "Some packages executed successfully"),
     ("run.completed", "Script execution completed"),
+    ("run.missing_package_or_all", "Must specify package name or use --all flag"),
+    // Exec command related
+    ("exec.start", "Starting predefined task: {}"),
+    ("exec.task_not_found", "Task definition not found: {}"),
+    ("exec.task_found", "Found task '{}': {}"),
+    ("exec.task_description", "Task description: {}"),
+    ("exec.executing_all_packages", "Executing task in all packages"),
+    ("exec.executing_package", "Executing task in package '{}'"),
     // Scheduler related
     ("scheduler.task_start", "Starting task: {}"),
     ("scheduler.task_success", "Task completed successfully: {}, took {:.2}s"),

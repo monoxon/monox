@@ -16,4 +16,55 @@
 //
 // ============================================================================
 
-// TODO: 实现 exec 命令
+use anyhow::Result;
+use clap::Args;
+
+use crate::core::TaskExecutor;
+use crate::models::config::Config;
+use crate::utils::logger::Logger;
+use crate::{t, tf};
+
+/// 执行预定义任务命令
+#[derive(Debug, Args)]
+pub struct ExecArgs {
+    /// 要执行的任务名称（在 monox.toml 中定义）
+    #[arg(short = 't', long)]
+    pub task: String,
+}
+
+/// 执行预定义任务
+pub async fn exec(args: ExecArgs) -> Result<()> {
+    Logger::info(tf!("exec.start", &args.task));
+
+    // 从配置文件中获取任务定义
+    let task_config = Config::get_task_config(&args.task)
+        .map_err(|_| anyhow::anyhow!(tf!("exec.task_not_found", &args.task)))?;
+
+    Logger::info(tf!(
+        "exec.task_found",
+        &task_config.name,
+        &task_config.command
+    ));
+
+    if let Some(desc) = &task_config.desc {
+        Logger::info(tf!("exec.task_description", desc));
+    }
+
+    // 创建任务执行器
+    let executor = TaskExecutor::new_from_config()?;
+
+    // 根据包名决定执行策略
+    let is_all_packages = task_config.pkg_name == "*";
+
+    if is_all_packages {
+        Logger::info(t!("exec.executing_all_packages"));
+        executor
+            .execute("*", &task_config.command, Some(true))
+            .await
+    } else {
+        Logger::info(tf!("exec.executing_package", &task_config.pkg_name));
+        executor
+            .execute(&task_config.pkg_name, &task_config.command, Some(false))
+            .await
+    }
+}
