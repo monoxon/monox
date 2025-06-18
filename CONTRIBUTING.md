@@ -442,6 +442,8 @@ Closes #123
 
 ## 🚀 发布流程
 
+MonoX 支持双平台发布：Rust 生态系统 (crates.io) 和 Node.js 生态系统 (npm)。
+
 ### 版本管理
 
 使用 [Semantic Versioning](https://semver.org/)：
@@ -450,43 +452,132 @@ Closes #123
 - **MINOR**: 向后兼容的功能新增
 - **PATCH**: 向后兼容的错误修复
 
-### 发布步骤
+### npm 发布流程 (推荐)
 
-1. **更新版本号**
-   ```bash
-   # 更新 Cargo.toml 中的版本号
-   vim Cargo.toml
-   ```
+我们使用 [Changesets](https://github.com/changesets/changesets) 管理版本和变更日志：
 
-2. **更新 CHANGELOG**
-   ```bash
-   # 记录本次发布的变更
-   vim CHANGELOG.md
-   ```
+#### 1. 准备发布
 
-3. **创建发布标签**
-   ```bash
-   git tag -a v0.2.0 -m "Release v0.2.0"
-   git push origin v0.2.0
-   ```
+```bash
+# 运行发布前检查
+pnpm run prepare-release
+```
 
-4. **构建发布版本**
-   ```bash
-   cargo make release
-   ```
+这会进行：
+- ✅ Git 状态检查
+- 📝 代码格式检查 (`cargo fmt --check`)
+- 🔍 代码质量检查 (`cargo clippy`)
+- 🧪 测试执行 (`cargo test`)
+- 🔨 Release 构建
 
-5. **发布到 crates.io**
-   ```bash
-   cargo publish
-   ```
+#### 2. 添加变更记录
+
+```bash
+# 交互式添加变更记录
+pnpm run changeset
+```
+
+选择变更类型：
+- **patch**: Bug 修复
+- **minor**: 新功能
+- **major**: 重大变更
+
+#### 3. 更新版本
+
+```bash
+# 更新版本号并自动提交
+pnpm run version
+```
+
+这会：
+- 更新 `package.json` 版本号
+- 生成 `CHANGELOG.md`
+- 消费 `.changeset` 中的变更记录
+- 自动提交版本变更
+
+#### 4. 发布到 npm
+
+```bash
+# 构建、发布并打标签
+pnpm run release
+```
+
+这会：
+- 构建 release 版本
+- 发布到 npm
+- 创建 Git 标签 (v0.1.0)
+- 推送标签到远程仓库
+
+### 传统发布流程 (Cargo)
+
+如果需要单独发布到 crates.io：
+
+#### 1. 手动更新版本
+
+```bash
+# 更新 Cargo.toml 中的版本号
+vim Cargo.toml
+```
+
+#### 2. 手动更新 CHANGELOG
+
+```bash
+# 记录本次发布的变更
+vim CHANGELOG.md
+```
+
+#### 3. 创建发布标签
+
+```bash
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
+```
+
+#### 4. 构建发布版本
+
+```bash
+cargo build --release
+```
+
+#### 5. 发布到 crates.io
+
+```bash
+cargo publish
+```
 
 ### 发布检查清单
 
+#### pnpm 发布
+- [ ] `pnpm run prepare-release` 通过
+- [ ] `pnpm run changeset` 添加变更记录
+- [ ] `pnpm run version` 更新版本
+- [ ] `pnpm run release` 发布成功
+
+#### Cargo 发布
 - [ ] 所有测试通过
 - [ ] 文档已更新
 - [ ] CHANGELOG 已更新
 - [ ] 版本号已更新
 - [ ] 发布说明已准备
+- [ ] `cargo publish` 成功
+
+### 发布脚本说明
+
+主要的 pnpm 脚本：
+
+```json
+{
+  "scripts": {
+    "prepare-release": "./scripts/release.sh",     // 发布前检查
+    "changeset": "changeset",                     // 添加变更记录
+    "version": "changeset version && git add . && git commit -m \"chore: version packages\"",  // 版本更新
+    "release": "pnpm run build && changeset publish && pnpm run tag",  // 发布流程
+    "tag": "git tag v$(node -p \"require('./package.json').version\") && git push --follow-tags"  // 标签管理
+  }
+}
+```
+
+详细的发布指南请参考 [RELEASE.md](./RELEASE.md)。
 
 ## 🤝 社区参与
 

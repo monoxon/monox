@@ -1,8 +1,66 @@
 {
-  "name": "monox-test-workspace",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "test-packages/*"
-  ]
+  "name": "monox",
+  "version": "0.1.0",
+  "description": "Lightweight monorepo build tool written in Rust",
+  "keywords": [
+    "monorepo",
+    "build-tool",
+    "dependency-analysis",
+    "rust",
+    "cli",
+    "package-manager"
+  ],
+  "homepage": "https://github.com/your-org/monox",
+  "bugs": {
+    "url": "https://github.com/your-org/monox/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/monox.git"
+  },
+  "license": "MIT",
+  "author": "Simple Data Team",
+  "bin": {
+    "monox": "./target/release/monox"
+  },
+  "files": [
+    "target/release/monox",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "cargo build --release",
+    "test": "cargo test",
+    "lint": "cargo clippy -- -D warnings",
+    "format": "cargo fmt",
+    "format:check": "cargo fmt --check",
+    "changeset": "changeset",
+    "version": "changeset version && git add . && git commit -m \"chore: version packages\"",
+    "release": "pnpm run build && changeset publish && pnpm run tag",
+    "tag": "git tag v$(node -p \"require('./package.json').version\") && git push --follow-tags",
+    "prepare-release": "./scripts/release.sh",
+    "dev": "cargo run --",
+    "check": "cargo check"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "pnpm": ">=7.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 } 
