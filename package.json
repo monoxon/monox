@@ -1,6 +1,6 @@
 {
   "name": "monox",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Lightweight monorepo build tool written in Rust",
   "keywords": [
     "monorepo",
@@ -63,4 +63,4 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   }
-} 
+}
