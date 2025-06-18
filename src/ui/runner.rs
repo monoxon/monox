@@ -18,8 +18,15 @@
 //
 // ============================================================================
 
+use crate::utils::constants::{icons, progress_chars, spinner_chars};
+use crate::utils::logger::Logger;
+use crate::{t, tf};
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::io::{self, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, Weak};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 /// 任务执行状态
 #[derive(Debug, Clone, PartialEq)]
@@ -69,11 +76,27 @@ pub struct RunnerUI {
     colored: bool,
     /// 是否显示进度条
     show_progress: bool,
+    /// 已渲染的行数（用于清除屏幕）
+    rendered_lines: usize,
+    /// 是否支持终端刷新
+    supports_refresh: bool,
+    /// Spinner 动画帧
+    spinner_frame: usize,
+    /// 当前阶段的包列表
+    current_stage_packages: Vec<String>,
+    /// 自动刷新定时器控制
+    refresh_timer_running: Arc<AtomicBool>,
+    /// 定时器线程句柄
+    refresh_timer_handle: Option<thread::JoinHandle<()>>,
+    /// 自引用（用于定时器回调）
+    self_ref: Option<Weak<Mutex<RunnerUI>>>,
 }
 
 impl RunnerUI {
     /// 创建新的任务 UI
     pub fn new(verbose: bool, colored: bool, show_progress: bool) -> Self {
+        let supports_refresh = !verbose && atty::is(atty::Stream::Stdout);
+
         Self {
             tasks: HashMap::new(),
             current_stage: 0,
@@ -81,7 +104,19 @@ impl RunnerUI {
             verbose,
             colored,
             show_progress,
+            rendered_lines: 0,
+            supports_refresh,
+            spinner_frame: 0,
+            current_stage_packages: Vec::new(),
+            refresh_timer_running: Arc::new(AtomicBool::new(false)),
+            refresh_timer_handle: None,
+            self_ref: None,
         }
+    }
+
+    /// 设置自引用（在创建 Arc<Mutex<RunnerUI>> 后调用）
+    pub fn set_self_ref(&mut self, self_ref: Weak<Mutex<RunnerUI>>) {
+        self.self_ref = Some(self_ref);
     }
 
     /// 设置总阶段数
@@ -92,8 +127,35 @@ impl RunnerUI {
     /// 开始新阶段
     pub fn start_stage(&mut self, stage: usize) {
         self.current_stage = stage;
-        if self.show_progress {
-            self.render_stage_header();
+
+        // 收集当前阶段的包列表
+        self.current_stage_packages = self
+            .tasks
+            .values()
+            .filter(|task| {
+                // 这里需要根据实际情况判断哪些任务属于当前阶段
+                // 暂时显示所有任务的包名
+                true
+            })
+            .map(|task| task.package.clone())
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        self.current_stage_packages.sort();
+
+        if self.show_progress && !self.verbose {
+            self.refresh_display();
+        } else if self.verbose {
+            self.render_stage_header_verbose();
+        }
+    }
+
+    /// 设置当前阶段的包列表
+    pub fn set_stage_packages(&mut self, packages: Vec<String>) {
+        self.current_stage_packages = packages;
+        if self.supports_refresh && !self.verbose {
+            self.refresh_display();
         }
     }
 
@@ -117,9 +179,13 @@ impl RunnerUI {
             task.status = TaskStatus::Running;
             task.start_time = Some(Instant::now());
 
-            // 克隆任务信息以避免借用冲突
-            let task_clone = task.clone();
-            self.render_task_start(&task_clone);
+            if self.verbose {
+                let task_clone = task.clone();
+                self.render_task_start(&task_clone);
+            } else {
+                self.start_refresh_timer();
+                self.refresh_display();
+            }
         }
     }
 
@@ -129,9 +195,16 @@ impl RunnerUI {
             task.status = TaskStatus::Success;
             task.end_time = Some(Instant::now());
 
-            // 克隆任务信息以避免借用冲突
-            let task_clone = task.clone();
-            self.render_task_complete(&task_clone);
+            if self.verbose {
+                let task_clone = task.clone();
+                self.render_task_complete(&task_clone);
+            } else {
+                self.refresh_display();
+                // 检查是否所有任务都完成了
+                if !self.has_running_tasks() {
+                    self.stop_refresh_timer();
+                }
+            }
         }
     }
 
@@ -142,30 +215,191 @@ impl RunnerUI {
             task.end_time = Some(Instant::now());
             task.error = Some(error);
 
-            // 克隆任务信息以避免借用冲突
-            let task_clone = task.clone();
-            self.render_task_failed(&task_clone);
-        }
-    }
-
-    /// 添加任务输出
-    pub fn add_task_output(&mut self, task_id: &str, output: String) {
-        if let Some(task) = self.tasks.get_mut(task_id) {
-            task.output.push(output.clone());
             if self.verbose {
-                // 克隆任务信息以避免借用冲突
                 let task_clone = task.clone();
-                self.render_task_output(&task_clone, &output);
+                self.render_task_failed(&task_clone);
+            } else {
+                self.refresh_display();
+                // 检查是否所有任务都完成了
+                if !self.has_running_tasks() {
+                    self.stop_refresh_timer();
+                }
             }
         }
     }
 
-    /// 渲染阶段头部
-    fn render_stage_header(&self) {
-        use crate::utils::constants::icons;
-        use crate::utils::logger::Logger;
-        use crate::{t, tf};
+    /// 刷新整个显示（非 verbose 模式）
+    fn refresh_display(&mut self) {
+        if !self.supports_refresh {
+            return;
+        }
 
+        // 清除之前的输出
+        self.clear_screen();
+
+        // 自动更新 spinner 帧（基于时间）
+        let now = SystemTime::now();
+        let elapsed_ms = now
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_millis();
+        self.spinner_frame = ((elapsed_ms / 100) % 8) as usize;
+
+        // 重新渲染
+        let content = self.build_display_content();
+        print!("{}", content);
+        let _ = io::stdout().flush();
+
+        // 记录渲染的行数
+        self.rendered_lines = content.lines().count();
+    }
+
+    /// 清除屏幕
+    fn clear_screen(&self) {
+        if self.rendered_lines > 0 {
+            // 移动光标到之前渲染内容的开始位置
+            print!("\x1B[{}A", self.rendered_lines);
+            // 清除从光标到屏幕底部的内容
+            print!("\x1B[J");
+        }
+    }
+
+    /// 构建显示内容
+    fn build_display_content(&self) -> String {
+        let mut content = String::new();
+
+        if self.current_stage > 0 && self.total_stages > 0 {
+            // Spinner 动画
+            let spinner_char = spinner_chars::BASE[self.spinner_frame];
+
+            // 进度条
+            let progress_bar = self.build_progress_bar();
+
+            // 阶段头部：Spinner + 进度条 + Stage 信息
+            content.push_str(&format!(
+                "{} {} {}\n",
+                spinner_char,
+                progress_bar,
+                tf!("runner.stage_header", self.current_stage, self.total_stages)
+            ));
+
+            // 当前阶段包列表
+            if !self.current_stage_packages.is_empty() {
+                content.push_str(&format!("{}\n", t!("runner.processing_packages")));
+                for (i, package) in self.current_stage_packages.iter().enumerate() {
+                    let status_icon = self.get_package_status_icon(package);
+                    content.push_str(&format!("  {} {}\n", status_icon, package));
+
+                    // 限制显示数量，避免屏幕过满
+                    if i >= 10 {
+                        let remaining = self.current_stage_packages.len() - i - 1;
+                        if remaining > 0 {
+                            content
+                                .push_str(&format!("{}\n", tf!("runner.more_packages", remaining)));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        content
+    }
+
+    /// 构建进度条
+    fn build_progress_bar(&self) -> String {
+        if self.total_stages == 0 {
+            return String::new();
+        }
+
+        let width = 20; // 进度条宽度
+        let progress = (self.current_stage as f64 / self.total_stages as f64).min(1.0);
+        let filled_width = (progress * width as f64) as usize;
+        let empty_width = width - filled_width;
+
+        let filled_part = progress_chars::FILLED.repeat(filled_width);
+        let empty_part = progress_chars::EMPTY.repeat(empty_width);
+
+        format!("[{}{}]", filled_part, empty_part)
+    }
+
+    /// 获取包的状态图标
+    fn get_package_status_icon(&self, package: &str) -> &'static str {
+        use crate::utils::constants::icons;
+
+        // 查找该包的任务状态
+        for task in self.tasks.values() {
+            if task.package == package {
+                return match task.status {
+                    TaskStatus::Running => "▸",
+                    TaskStatus::Success => icons::SUCCESS,
+                    TaskStatus::Failed => icons::ERROR,
+                    TaskStatus::Pending => "○",
+                    TaskStatus::Skipped => icons::SKIP,
+                };
+            }
+        }
+
+        "○" // 默认待处理状态
+    }
+
+    /// 检查是否有正在运行的任务
+    fn has_running_tasks(&self) -> bool {
+        self.tasks
+            .values()
+            .any(|task| task.status == TaskStatus::Running)
+    }
+
+    /// 启动自动刷新定时器
+    fn start_refresh_timer(&mut self) {
+        if !self.supports_refresh || self.refresh_timer_running.load(Ordering::Relaxed) {
+            return;
+        }
+
+        self.refresh_timer_running.store(true, Ordering::Relaxed);
+
+        // 获取自引用的弱指针
+        if let Some(self_weak) = self.self_ref.clone() {
+            let timer_running = Arc::clone(&self.refresh_timer_running);
+
+            let handle = thread::spawn(move || {
+                while timer_running.load(Ordering::Relaxed) {
+                    thread::sleep(Duration::from_millis(100));
+
+                    // 尝试升级弱引用并刷新显示
+                    if let Some(ui_arc) = self_weak.upgrade() {
+                        if let Ok(mut ui) = ui_arc.try_lock() {
+                            // 检查是否还有运行中的任务
+                            if ui.has_running_tasks() && ui.supports_refresh {
+                                ui.refresh_display();
+                            } else if !ui.has_running_tasks() {
+                                // 如果没有运行中的任务，停止定时器
+                                timer_running.store(false, Ordering::Relaxed);
+                                break;
+                            }
+                        }
+                    } else {
+                        // UI 已被销毁，停止定时器
+                        break;
+                    }
+                }
+            });
+
+            self.refresh_timer_handle = Some(handle);
+        }
+    }
+
+    /// 停止自动刷新定时器
+    fn stop_refresh_timer(&mut self) {
+        self.refresh_timer_running.store(false, Ordering::Relaxed);
+
+        if let Some(handle) = self.refresh_timer_handle.take() {
+            let _ = handle.join();
+        }
+    }
+
+    /// 渲染阶段头部（verbose 模式）
+    fn render_stage_header_verbose(&self) {
         Logger::info(format!(
             "\n{} {}",
             icons::STAGE,
@@ -179,10 +413,6 @@ impl RunnerUI {
             return;
         }
 
-        use crate::utils::constants::icons;
-        use crate::utils::logger::Logger;
-        use crate::{t, tf};
-
         Logger::info(format!(
             "  {} {}",
             icons::EXEC,
@@ -192,10 +422,6 @@ impl RunnerUI {
 
     /// 渲染任务完成
     fn render_task_complete(&self, task: &TaskInfo) {
-        use crate::utils::constants::icons;
-        use crate::utils::logger::Logger;
-        use crate::{t, tf};
-
         let duration = if let (Some(start), Some(end)) = (task.start_time, task.end_time) {
             end.duration_since(start)
         } else {
@@ -231,15 +457,8 @@ impl RunnerUI {
         }
     }
 
-    /// 渲染任务输出
-    fn render_task_output(&self, task: &TaskInfo, output: &str) {
-        use crate::utils::logger::Logger;
-
-        Logger::info(format!("    [{}] {}", task.package, output));
-    }
-
     /// 渲染执行总结
-    pub fn render_summary(&self) {
+    pub fn render_summary(&mut self) {
         use crate::utils::constants::icons;
         use crate::utils::logger::Logger;
         use crate::{t, tf};
@@ -255,30 +474,73 @@ impl RunnerUI {
             .values()
             .filter(|t| t.status == TaskStatus::Failed)
             .count();
+        let skipped_tasks = self
+            .tasks
+            .values()
+            .filter(|t| t.status == TaskStatus::Skipped)
+            .count();
 
-        Logger::info(format!(
-            "\n{} {}",
-            icons::COMPLETE,
-            t!("runner.execution_summary")
-        ));
-        Logger::info("═══════════════════════════════════════");
-        Logger::info(format!(
-            "{} {}",
-            icons::PACKAGE,
-            tf!("runner.total_tasks", total_tasks)
-        ));
-        Logger::info(format!(
-            "{} {}",
-            icons::SUCCESS,
-            tf!("runner.successful_tasks", successful_tasks)
-        ));
+        if self.supports_refresh && !self.verbose {
+            // 清除刷新模式的显示
+            self.clear_screen();
 
-        if failed_tasks > 0 {
-            Logger::error(format!(
-                "{} {}",
-                icons::ERROR,
-                tf!("runner.failed_tasks", failed_tasks)
+            // 显示最终汇总
+            let mut summary_lines = vec![
+                format!("\n{} {}", icons::COMPLETE, t!("runner.execution_summary")),
+                "═══════════════════════════════════════".to_string(),
+                format!(
+                    "{} {}",
+                    icons::PACKAGE,
+                    tf!("runner.total_tasks", total_tasks)
+                ),
+                format!(
+                    "{} {}",
+                    icons::SUCCESS,
+                    tf!("runner.successful_tasks", successful_tasks)
+                ),
+                format!(
+                    "{} {}",
+                    icons::ERROR,
+                    tf!("runner.failed_tasks", failed_tasks)
+                ),
+                format!("○ {}", tf!("runner.skipped_tasks", skipped_tasks)),
+            ];
+
+            let summary_content = summary_lines.join("\n") + "\n";
+
+            print!("{}", summary_content);
+            let _ = io::stdout().flush();
+            self.rendered_lines = 0; // 重置，不再清除这个输出
+        } else {
+            // Verbose 模式使用 Logger
+            Logger::info(format!(
+                "\n{} {}",
+                icons::COMPLETE,
+                t!("runner.execution_summary")
             ));
+            Logger::info("═══════════════════════════════════════");
+            Logger::info(format!(
+                "{} {}",
+                icons::PACKAGE,
+                tf!("runner.total_tasks", total_tasks)
+            ));
+            Logger::info(format!(
+                "{} {}",
+                icons::SUCCESS,
+                tf!("runner.successful_tasks", successful_tasks)
+            ));
+
+            if failed_tasks > 0 {
+                Logger::error(format!(
+                    "{} {}",
+                    icons::ERROR,
+                    tf!("runner.failed_tasks", failed_tasks)
+                ));
+            }
+
+            if skipped_tasks > 0 {
+                Logger::warn(format!("○ {}", tf!("runner.skipped_tasks", skipped_tasks)));
+            }
         }
     }
 }
@@ -330,5 +592,11 @@ impl ProgressBar {
             "[{}{}] {}/{} ({}%)",
             filled_part, empty_part, self.current, self.total, percentage
         )
+    }
+}
+
+impl Drop for RunnerUI {
+    fn drop(&mut self) {
+        self.stop_refresh_timer();
     }
 }

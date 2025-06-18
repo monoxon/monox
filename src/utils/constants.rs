@@ -59,6 +59,8 @@ pub mod icons {
     pub const ARROW: &str = "→";
     /// 汇总图标
     pub const SUMMARY: &str = "◈";
+    /// 跳过图标
+    pub const SKIP: &str = "○";
 }
 
 /// 进度条字符

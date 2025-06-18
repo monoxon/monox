@@ -20,13 +20,12 @@ use crate::core::{AsyncTaskScheduler, DependencyAnalyzer, SchedulerConfig, Sched
 use crate::models::config::Config;
 use crate::models::package::WorkspacePackage;
 use crate::models::{Task, TaskConfig, TaskResult, TaskStatus};
-use crate::utils::constants::icons;
+use crate::ui::runner::RunnerUI;
 use crate::utils::logger::Logger;
 use crate::{t, tf};
 use anyhow::{Context, Result};
-use std::fs;
-use std::path::Path;
 use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 /// 执行命令并返回结果
@@ -90,22 +89,32 @@ async fn run_command(task: &Task) -> Result<TaskResult> {
 }
 
 /// 执行单个任务
-async fn execute_task(task: &mut Task) -> Result<()> {
-    Logger::info(tf!(
-        "executor.task_start",
-        &task.package_name,
-        &task.command
-    ));
+async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Result<()> {
+    let task_id = format!("{}:{}", task.package_name, task.command);
+
+    // 更新 UI 或打印日志
+    if let Some(ui) = &ui {
+        let mut ui_guard = ui.lock().unwrap();
+        ui_guard.start_task(&task_id);
+    } else if Config::get_verbose() {
+        Logger::info(tf!(
+            "executor.task_start",
+            &task.package_name,
+            &task.command
+        ));
+    }
 
     // 开始执行
     task.start();
 
     if task.status == TaskStatus::Skipped {
-        Logger::warn(tf!(
-            "executor.task_skipped",
-            &task.package_name,
-            &task.command
-        ));
+        if Config::get_verbose() {
+            Logger::warn(tf!(
+                "executor.task_skipped",
+                &task.package_name,
+                &task.command
+            ));
+        }
         return Ok(());
     }
 
@@ -117,25 +126,40 @@ async fn execute_task(task: &mut Task) -> Result<()> {
     // 更新任务状态
     task.complete(result);
 
-    // 输出结果
-    if task.is_success() {
-        Logger::success(tf!(
-            "executor.task_success",
-            &task.package_name,
-            &task.command,
-            start_time.elapsed().as_secs_f64()
-        ));
-    } else {
-        Logger::error(tf!(
-            "executor.task_failed",
-            &task.package_name,
-            &task.command,
-            start_time.elapsed().as_secs_f64()
-        ));
+    // 更新 UI 或打印日志
+    if let Some(ui) = &ui {
+        let mut ui_guard = ui.lock().unwrap();
+        if task.is_success() {
+            ui_guard.complete_task(&task_id);
+        } else {
+            let error_msg = task
+                .result
+                .as_ref()
+                .map(|r| r.stderr.clone())
+                .unwrap_or_else(|| "执行失败".to_string());
+            ui_guard.fail_task(&task_id, error_msg);
+        }
+    } else if Config::get_verbose() {
+        // 输出结果
+        if task.is_success() {
+            Logger::success(tf!(
+                "executor.task_success",
+                &task.package_name,
+                &task.command,
+                start_time.elapsed().as_secs_f64()
+            ));
+        } else {
+            Logger::error(tf!(
+                "executor.task_failed",
+                &task.package_name,
+                &task.command,
+                start_time.elapsed().as_secs_f64()
+            ));
 
-        if let Some(task_result) = &task.result {
-            if !task_result.stderr.is_empty() {
-                Logger::error(tf!("executor.task_stderr", &task_result.stderr));
+            if let Some(task_result) = &task.result {
+                if !task_result.stderr.is_empty() {
+                    Logger::error(tf!("executor.task_stderr", &task_result.stderr));
+                }
             }
         }
     }
@@ -252,9 +276,56 @@ impl TaskExecutor {
         stages: &Vec<Vec<WorkspacePackage>>,
         command: &str,
     ) -> Result<()> {
-        for stage in stages {
-            self.execute_single_stage(stage, command).await?;
+        let verbose = self.config.verbose;
+
+        // 非 verbose 模式下使用 UI 渲染
+        let ui = if !verbose {
+            let runner_ui = RunnerUI::new(false, Config::get_colored().unwrap_or(true), true);
+            let ui = Arc::new(Mutex::new(runner_ui));
+
+            // 设置自引用以支持定时器回调
+            ui.lock().unwrap().set_self_ref(Arc::downgrade(&ui));
+
+            // 设置总阶段数
+            ui.lock().unwrap().set_total_stages(stages.len());
+
+            // 预先添加所有任务到 UI
+            for stage in stages {
+                for package in stage {
+                    let task_id = format!("{}:{}", package.name, command);
+                    ui.lock()
+                        .unwrap()
+                        .add_task(task_id, command.to_string(), package.name.clone());
+                }
+            }
+
+            Some(ui)
+        } else {
+            None
+        };
+
+        // 执行阶段
+        for (stage_idx, stage) in stages.iter().enumerate() {
+            if let Some(ui) = &ui {
+                let mut ui_lock = ui.lock().unwrap();
+                ui_lock.start_stage(stage_idx + 1);
+
+                // 设置当前阶段的包列表
+                let stage_packages: Vec<String> =
+                    stage.iter().map(|pkg| pkg.name.clone()).collect();
+                ui_lock.set_stage_packages(stage_packages);
+                drop(ui_lock); // 释放锁
+            }
+
+            self.execute_single_stage(stage, command, ui.clone())
+                .await?;
         }
+
+        // 显示执行总结
+        if let Some(ui) = &ui {
+            ui.lock().unwrap().render_summary();
+        }
+
         Ok(())
     }
 
@@ -263,6 +334,7 @@ impl TaskExecutor {
         &self,
         stage: &Vec<WorkspacePackage>,
         command: &str,
+        ui: Option<Arc<Mutex<RunnerUI>>>,
     ) -> Result<()> {
         if stage.is_empty() {
             return Ok(());
@@ -277,11 +349,13 @@ impl TaskExecutor {
                 command.to_string(),
                 vec![],
             );
-            return execute_task(&mut task).await;
+            return execute_task(&mut task, ui).await;
         }
 
         // 多个包时使用并发执行
-        Logger::info(tf!("executor.stage_concurrent_start", stage.len()));
+        if self.config.verbose {
+            Logger::info(tf!("executor.stage_concurrent_start", stage.len()));
+        }
 
         // 创建调度器配置
         let scheduler_config = SchedulerConfig {
@@ -309,7 +383,9 @@ impl TaskExecutor {
                     vec![],
                 );
 
-                let task_future = async move { execute_task(&mut task).await };
+                // 克隆 UI 引用用于异步任务
+                let ui_clone = ui.clone();
+                let task_future = async move { execute_task(&mut task, ui_clone).await };
 
                 (task_id, task_future)
             })
@@ -347,11 +423,13 @@ impl TaskExecutor {
             }
         }
 
-        Logger::info(tf!(
-            "executor.stage_concurrent_complete",
-            success_count,
-            stage.len()
-        ));
+        if self.config.verbose {
+            Logger::info(tf!(
+                "executor.stage_concurrent_complete",
+                success_count,
+                stage.len()
+            ));
+        }
 
         // 如果有失败任务且不允许继续执行，则返回错误
         if !failed_tasks.is_empty() {
@@ -359,39 +437,5 @@ impl TaskExecutor {
         }
 
         Ok(())
-    }
-
-    /// 打印执行汇总
-    fn print_execution_summary(
-        &self,
-        success_count: usize,
-        failed_count: usize,
-        failed_packages: &[String],
-        command: &str,
-    ) {
-        Logger::info(format!(
-            "\n{} {}",
-            icons::SUMMARY,
-            t!("run.execution_summary")
-        ));
-        Logger::info("═══════════════════════════════════════");
-
-        Logger::info(tf!("run.summary_script", command));
-        Logger::info(tf!("run.summary_success", success_count));
-        Logger::info(tf!("run.summary_failed", failed_count));
-        Logger::info(tf!("run.summary_total", success_count + failed_count));
-
-        if failed_count > 0 {
-            Logger::info(format!("\n{} {}", icons::ERROR, t!("run.failed_packages")));
-            for package in failed_packages {
-                Logger::error(format!("  {} {}", icons::PACKAGE, package));
-            }
-        }
-
-        if failed_count == 0 {
-            Logger::success(format!("{} {}", icons::SUCCESS, t!("run.all_success")));
-        } else {
-            Logger::warn(format!("{} {}", icons::WARNING, t!("run.partial_success")));
-        }
     }
 }

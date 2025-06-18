@@ -273,4 +273,16 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("scheduler.all_success", "All tasks executed successfully!"),
     ("scheduler.partial_success", "Some tasks executed successfully"),
     ("scheduler.all_failed", "All tasks failed"),
+    // Runner UI related
+    ("runner.stage_header", "Stage {}/{}"),
+    ("runner.task_start", "Starting task: {} in {}"),
+    ("runner.task_complete", "Task {} in {} completed in {}ms"),
+    ("runner.task_failed", "Task {} in {} failed"),
+    ("runner.execution_summary", "Task Execution Report"),
+    ("runner.total_tasks", "Total tasks: {}"),
+    ("runner.successful_tasks", "Successful tasks: {}"),
+    ("runner.failed_tasks", "Failed tasks: {}"),
+    ("runner.skipped_tasks", "Skipped tasks: {}"),
+    ("runner.processing_packages", "Processing packages:"),
+    ("runner.more_packages", "  ... {} more packages"),
 ];

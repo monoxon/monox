@@ -243,4 +243,16 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("scheduler.all_success", "所有任务执行成功！"),
     ("scheduler.partial_success", "部分任务执行成功"),
     ("scheduler.all_failed", "所有任务执行失败"),
+    // Runner UI 相关
+    ("runner.stage_header", "阶段 {}/{}"),
+    ("runner.task_start", "开始任务: {} 在 {}"),
+    ("runner.task_complete", "任务 {} 在 {} 中完成，耗时 {}ms"),
+    ("runner.task_failed", "任务 {} 在 {} 中失败"),
+    ("runner.execution_summary", "执行结果汇总"),
+    ("runner.total_tasks", "总任务数: {}"),
+    ("runner.successful_tasks", "成功任务数: {}"),
+    ("runner.failed_tasks", "失败任务数: {}"),
+    ("runner.skipped_tasks", "跳过任务数: {}"),
+    ("runner.processing_packages", "正在处理包:"),
+    ("runner.more_packages", "  ... 还有 {} 个包"),
 ];
