@@ -28,10 +28,10 @@ use std::sync::{Arc, Mutex};
 use crate::core::analyzer::DependencyAnalyzer;
 use crate::core::scheduler::{AsyncTaskScheduler, SchedulerConfig, TaskResult};
 use crate::models::config::Config;
+use crate::ui::spinner::Spinner;
 use crate::utils::colors::Colors;
 use crate::utils::constants::icons;
 use crate::utils::logger::Logger;
-use crate::utils::spinner::Spinner;
 use crate::{t, tf};
 
 /// 过期依赖信息
@@ -81,7 +81,7 @@ struct DependencyInfo {
     /// 版本规范
     version_spec: String,
     /// 使用该依赖的包列表
-    used_by: Vec<(String, String)>, // (package_name, dep_type)
+    used_by: Vec<(String, String)>,
 }
 
 /// npm view 命令的响应结构
@@ -333,7 +333,10 @@ async fn check_outdated_with_scheduler(
 
     // 创建进度显示（自动转动 + 消息更新）
     let mut spinner = if !verbose {
-        Some(Spinner::new(tf!("check.outdated.progress", 0, total_deps)))
+        Some(Spinner::new_with_prefix(
+            Logger::get_prefix("INFO"),
+            tf!("check.outdated.progress", 0, total_deps),
+        ))
     } else {
         None
     };

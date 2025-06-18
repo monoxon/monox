@@ -23,43 +23,34 @@ use super::constants::APP_NAME;
 pub struct Logger;
 
 impl Logger {
+    /// 获取各种类型日志前缀(带颜色)
+    pub fn get_prefix(level: &str) -> String {
+        match level {
+            "DEBUG" => Colors::debug(&format!("[{}:DEBUG]", APP_NAME)),
+            "INFO" => Colors::info(&format!("[{}]", APP_NAME)),
+            "WARN" => Colors::warn(&format!("[{}]", APP_NAME)),
+            "ERROR" => Colors::error(&format!("[{}]", APP_NAME)),
+            _ => format!("[{}]", APP_NAME),
+        }
+    }
+
     pub fn debug<S: AsRef<str>>(msg: S) {
-        println!(
-            "{} {}",
-            Colors::debug(&format!("[{}:DEBUG]", APP_NAME)),
-            msg.as_ref()
-        );
+        println!("{} {}", Self::get_prefix("DEBUG"), msg.as_ref());
     }
 
     pub fn info<S: AsRef<str>>(msg: S) {
-        println!(
-            "{} {}",
-            Colors::info(&format!("[{}]", APP_NAME)),
-            msg.as_ref()
-        );
+        println!("{} {}", Self::get_prefix("INFO"), msg.as_ref());
     }
 
     pub fn warn<S: AsRef<str>>(msg: S) {
-        println!(
-            "{} {}",
-            Colors::warn(&format!("[{}]", APP_NAME)),
-            msg.as_ref()
-        );
+        println!("{} {}", Self::get_prefix("WARN"), msg.as_ref());
     }
 
     pub fn error<S: AsRef<str>>(msg: S) {
-        eprintln!(
-            "{} {}",
-            Colors::error(&format!("[{}]", APP_NAME)),
-            msg.as_ref()
-        );
+        eprintln!("{} {}", Self::get_prefix("ERROR"), msg.as_ref());
     }
 
     pub fn success<S: AsRef<str>>(msg: S) {
-        println!(
-            "{} {}",
-            Colors::success(&format!("[{}]", APP_NAME)),
-            msg.as_ref()
-        );
+        println!("{} {}", Self::get_prefix("SUCCESS"), msg.as_ref());
     }
 }

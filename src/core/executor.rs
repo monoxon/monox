@@ -110,7 +110,7 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
     if task.status == TaskStatus::Skipped {
         if let Some(ui) = &ui {
             let mut ui_guard = ui.lock().unwrap();
-            ui_guard.skip_task(&task_id, Some("脚本不存在".to_string()));
+            ui_guard.skip_task(&task_id, Some(t!("executor.script_not_exist")));
         } else if Config::get_verbose() {
             Logger::warn(tf!(
                 "executor.task_skipped",
@@ -139,7 +139,7 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
                 .result
                 .as_ref()
                 .map(|r| r.stderr.clone())
-                .unwrap_or_else(|| "执行失败".to_string());
+                .unwrap_or_else(|| t!("executor.execution_failed"));
             ui_guard.fail_task(&task_id, error_msg);
         }
     } else if Config::get_verbose() {
@@ -339,6 +339,15 @@ impl TaskExecutor {
         // 显示执行总结
         if let Some(ui) = &ui {
             ui.lock().unwrap().render_summary();
+        } else if verbose {
+            // verbose 模式下显示完整汇总
+            use crate::ui::summary::render_execution_summary;
+
+            // 统计任务总数（在verbose模式下，假设都执行成功了）
+            let total_tasks: usize = stages.iter().map(|stage| stage.len()).sum();
+
+            // 调用完整的汇总渲染函数
+            render_execution_summary(total_tasks, total_tasks, 0, 0, None);
         }
 
         Ok(())

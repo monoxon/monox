@@ -123,27 +123,13 @@ impl RunnerUI {
     pub fn start_stage(&mut self, stage: usize) {
         self.current_stage = stage;
 
-        // 收集当前阶段的包列表
-        self.current_stage_packages = self
-            .tasks
-            .values()
-            .filter(|_| {
-                // 这里需要根据实际情况判断哪些任务属于当前阶段
-                // 暂时显示所有任务的包名
-                true
-            })
-            .map(|task| task.package.clone())
-            .collect::<std::collections::HashSet<_>>()
-            .into_iter()
-            .collect();
+        // 不在这里设置包列表，等待通过 set_stage_packages 设置
+        // 这样避免在错误的包列表基础上刷新显示
 
-        self.current_stage_packages.sort();
-
-        if self.show_progress && !self.verbose {
-            self.refresh_display();
-        } else if self.verbose {
+        if self.verbose {
             self.render_stage_header_verbose();
         }
+        // 注意：不在这里调用 refresh_display()，而是在 set_stage_packages 中调用
     }
 
     /// 设置当前阶段的包列表
@@ -293,7 +279,8 @@ impl RunnerUI {
 
             // 阶段头部：Spinner + 进度条 + Stage 信息
             content.push_str(&format!(
-                "{} {} {}\n",
+                "{} {} {} {}\n",
+                Logger::get_prefix("INFO"),
                 spinner_char,
                 progress_bar,
                 tf!("runner.stage_header", self.current_stage, self.total_stages)
@@ -304,7 +291,8 @@ impl RunnerUI {
                 // 计算当前阶段任务完成统计
                 let (completed, total) = self.get_current_stage_progress();
                 content.push_str(&format!(
-                    "{} ({}/{})\n",
+                    "{} {} ({}/{})\n",
+                    Logger::get_prefix("INFO"),
                     t!("runner.processing_packages"),
                     completed,
                     total
@@ -312,14 +300,22 @@ impl RunnerUI {
 
                 for (i, package) in self.current_stage_packages.iter().enumerate() {
                     let status_icon = self.get_package_status_icon(package);
-                    content.push_str(&format!("  {} {}\n", status_icon, package));
+                    content.push_str(&format!(
+                        "{}   {} {}\n",
+                        Logger::get_prefix("INFO"),
+                        status_icon,
+                        package
+                    ));
 
                     // 限制显示数量，避免屏幕过满
                     if i >= 10 {
                         let remaining = self.current_stage_packages.len() - i - 1;
                         if remaining > 0 {
-                            content
-                                .push_str(&format!("{}\n", tf!("runner.more_packages", remaining)));
+                            content.push_str(&format!(
+                                "{} {}\n",
+                                Logger::get_prefix("INFO"),
+                                tf!("runner.more_packages", remaining)
+                            ));
                         }
                         break;
                     }
@@ -344,7 +340,7 @@ impl RunnerUI {
         let filled_part = progress_chars::FILLED.repeat(filled_width);
         let empty_part = progress_chars::EMPTY.repeat(empty_width);
 
-        format!("[{}{}]", filled_part, empty_part)
+        format!("{}{}", filled_part, empty_part)
     }
 
     /// 获取包的状态图标
@@ -511,9 +507,7 @@ impl RunnerUI {
 
     /// 渲染执行总结
     pub fn render_summary(&mut self) {
-        use crate::utils::constants::icons;
-        use crate::utils::logger::Logger;
-        use crate::{t, tf};
+        use crate::ui::summary::render_execution_summary;
 
         let total_tasks = self.tasks.len();
         let successful_tasks = self
@@ -532,68 +526,49 @@ impl RunnerUI {
             .filter(|t| t.status == TaskStatus::Skipped)
             .count();
 
+        // 刷新模式需要先清屏，然后显示完整的最终状态
         if self.supports_refresh && !self.verbose {
-            // 清除刷新模式的显示
             self.clear_screen();
 
-            // 显示最终汇总
-            let summary_lines = vec![
-                format!("\n{} {}", icons::COMPLETE, t!("runner.execution_summary")),
-                "═══════════════════════════════════════".to_string(),
-                format!(
-                    "{} {}",
-                    icons::PACKAGE,
-                    tf!("runner.total_tasks", total_tasks)
-                ),
-                format!(
-                    "{} {}",
-                    icons::SUCCESS,
-                    tf!("runner.successful_tasks", successful_tasks)
-                ),
-                format!(
-                    "{} {}",
-                    icons::ERROR,
-                    tf!("runner.failed_tasks", failed_tasks)
-                ),
-                format!("○ {}", tf!("runner.skipped_tasks", skipped_tasks)),
-            ];
-
-            let summary_content = summary_lines.join("\n") + "\n";
-
-            print!("{}", summary_content);
-            let _ = io::stdout().flush();
-            self.rendered_lines = 0; // 重置，不再清除这个输出
-        } else {
-            // Verbose 模式使用 Logger
-            Logger::info(format!(
-                "\n{} {}",
-                icons::COMPLETE,
-                t!("runner.execution_summary")
-            ));
-            Logger::info("═══════════════════════════════════════");
-            Logger::info(format!(
-                "{} {}",
-                icons::PACKAGE,
-                tf!("runner.total_tasks", total_tasks)
-            ));
-            Logger::info(format!(
-                "{} {}",
-                icons::SUCCESS,
-                tf!("runner.successful_tasks", successful_tasks)
-            ));
-
-            if failed_tasks > 0 {
-                Logger::error(format!(
-                    "{} {}",
-                    icons::ERROR,
-                    tf!("runner.failed_tasks", failed_tasks)
-                ));
-            }
-
-            if skipped_tasks > 0 {
-                Logger::warn(format!("○ {}", tf!("runner.skipped_tasks", skipped_tasks)));
-            }
+            // 显示最终的完整进度条（100%）
+            self.render_final_progress();
         }
+
+        // 直接调用汇总渲染函数
+        render_execution_summary(
+            total_tasks,
+            successful_tasks,
+            failed_tasks,
+            skipped_tasks,
+            None, // 暂时不传递执行时长
+        );
+
+        // 重置渲染行数（刷新模式下不再清除这个输出）
+        if self.supports_refresh && !self.verbose {
+            self.rendered_lines = 0;
+        }
+    }
+
+    /// 渲染最终的完整进度条
+    fn render_final_progress(&self) {
+        // 构建 100% 的进度条
+        let width = 20;
+        let filled_part = progress_chars::FILLED.repeat(width);
+        let final_progress_bar = filled_part;
+
+        // 显示最终状态：无 Spinner，完整进度条，显示"完成"
+        print!(
+            "{} ✓ {} {}\n",
+            Logger::get_prefix("INFO"),
+            final_progress_bar,
+            tf!(
+                "runner.stage_complete",
+                self.total_stages,
+                self.total_stages
+            )
+        );
+
+        let _ = io::stdout().flush();
     }
 }
 

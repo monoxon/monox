@@ -17,8 +17,6 @@
 
 pub mod colors;
 pub mod constants;
-pub mod fs;
 pub mod logger;
-pub mod npm;
 pub mod performance;
-pub mod spinner;
+pub mod styles;

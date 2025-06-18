@@ -28,7 +28,7 @@ pub struct RunArgs {
 
     /// 目标包名列表 (如果不指定，将运行所有包含该脚本的包) - no must
     #[arg(short = 'p', long)]
-    pub package_name: Option<String>,
+    pub package: Option<String>,
 
     /// 是否运行所有包 - no must
     #[arg(short = 'a', long)]
@@ -39,7 +39,7 @@ pub async fn run(args: RunArgs) -> Result<()> {
     Logger::info(tf!("run.start", &args.command));
 
     let executor = TaskExecutor::new_from_config()?;
-    match (args.all, args.package_name) {
+    match (args.all, args.package) {
         (true, _) => executor.execute("*", &args.command, Some(true)).await,
         (false, Some(package_name)) => {
             executor
