@@ -84,12 +84,10 @@ impl Spinner {
                     } else {
                         format!("{} {}", spinner_char, suffix_msg)
                     }
+                } else if suffix_msg.is_empty() {
+                    format!("{} {}", prefix_msg, spinner_char)
                 } else {
-                    if suffix_msg.is_empty() {
-                        format!("{} {}", prefix_msg, spinner_char)
-                    } else {
-                        format!("{} {} {}", prefix_msg, spinner_char, suffix_msg)
-                    }
+                    format!("{} {} {}", prefix_msg, spinner_char, suffix_msg)
                 };
 
                 // 清除当前行并打印新内容
@@ -152,12 +150,10 @@ impl Spinner {
         // 构建显示文本：prefix + spinner + suffix
         let display_text = if prefix_msg.is_empty() {
             format!("{} {}", spinner_char, new_message)
+        } else if new_message.is_empty() {
+            format!("{} {}", prefix_msg, spinner_char)
         } else {
-            if new_message.is_empty() {
-                format!("{} {}", prefix_msg, spinner_char)
-            } else {
-                format!("{} {} {}", prefix_msg, spinner_char, new_message)
-            }
+            format!("{} {} {}", prefix_msg, spinner_char, new_message)
         };
 
         print!("\r{}", display_text);
@@ -182,12 +178,10 @@ impl Spinner {
             } else {
                 format!("{} {}", spinner_char, new_suffix)
             }
+        } else if new_suffix.is_empty() {
+            format!("{} {}", new_prefix, spinner_char)
         } else {
-            if new_suffix.is_empty() {
-                format!("{} {}", new_prefix, spinner_char)
-            } else {
-                format!("{} {} {}", new_prefix, spinner_char, new_suffix)
-            }
+            format!("{} {} {}", new_prefix, spinner_char, new_suffix)
         };
 
         print!("\r{}", display_text);

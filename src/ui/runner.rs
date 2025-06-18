@@ -557,8 +557,8 @@ impl RunnerUI {
         let final_progress_bar = filled_part;
 
         // 显示最终状态：无 Spinner，完整进度条，显示"完成"
-        print!(
-            "{} ✓ {} {}\n",
+        println!(
+            "{} ✓ {} {}",
             Logger::get_prefix("INFO"),
             final_progress_bar,
             tf!(

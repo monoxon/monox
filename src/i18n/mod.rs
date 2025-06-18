@@ -54,7 +54,7 @@ fn get_language_from_config() -> Option<String> {
 #[macro_export]
 macro_rules! t {
     ($key:expr) => {
-        crate::i18n::get_translation($key)
+        $crate::i18n::get_translation($key)
     };
 }
 
@@ -74,8 +74,8 @@ pub fn format_with_args(template: String, args: Vec<String>) -> String {
 #[macro_export]
 macro_rules! tf {
     ($key:expr, $($arg:expr),*) => {{
-        let template = crate::i18n::get_translation($key);
+        let template = $crate::i18n::get_translation($key);
         let args = vec![$(format!("{}", $arg)),*];
-        crate::i18n::format_with_args(template, args)
+        $crate::i18n::format_with_args(template, args)
     }};
 }
