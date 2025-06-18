@@ -1,451 +1,452 @@
 # MonoX
 
-> 🚀 基于 Rust 的轻量级 monorepo 构建工具
+> 🚀 Lightweight monorepo build tool written in Rust
 
-MonoX 是一个专为 monorepo 项目设计的智能构建工具，通过依赖关系分析和任务调度优化，帮助您高效管理多包项目的构建过程。
+MonoX is an intelligent build tool designed specifically for monorepo projects, helping you efficiently manage multi-package project builds through dependency analysis and task scheduling optimization.
 
-## ✨ 核心特性
+## ✨ Core Features
 
-- 🔍 **智能依赖分析** - 自动解析包依赖关系，构建有向无环图
-- 📦 **单包分析** - 支持分析指定包及其依赖链，精确定位构建范围
-- ⚡ **并发任务执行** - 同阶段包并发构建，最大化 CPU 利用率
-- 🛡️ **安全性检查** - 循环依赖检测、版本冲突检查、过期依赖扫描
-- 📊 **实时进度显示** - 美观的进度条和任务状态展示
-- 🌍 **完整国际化支持** - 中文/英文双语界面，动态语言切换
-- 🎯 **灵活配置** - 通过 `monox.toml` 自定义任务和执行策略
-- 🔧 **多包管理器支持** - 支持 pnpm、npm、yarn
-- 🎨 **智能用户界面** - 非verbose模式实时刷新UI，verbose模式详细日志
-- ⚙️ **高级执行控制** - 超时控制、错误处理、并发限制
+- 🔍 **Smart Dependency Analysis** - Automatically parse package dependencies and build directed acyclic graphs
+- 📦 **Single Package Analysis** - Support analyzing specific packages and their dependency chains for precise build scope
+- ⚡ **Concurrent Task Execution** - Concurrent builds within the same stage to maximize CPU utilization
+- 🛡️ **Safety Checks** - Circular dependency detection, version conflict checking, outdated dependency scanning
+- 📊 **Real-time Progress Display** - Beautiful progress bars and task status visualization
+- 🌍 **Complete Internationalization** - Chinese/English bilingual interface with dynamic language switching
+- 🎯 **Flexible Configuration** - Customize tasks and execution strategies through `monox.toml`
+- 🔧 **Multi-Package Manager Support** - Support for pnpm, npm, yarn
+- 🎨 **Smart User Interface** - Real-time refresh UI in non-verbose mode, detailed logs in verbose mode
+- ⚙️ **Advanced Execution Control** - Timeout control, error handling, concurrency limits
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 安装
+### Installation
 
 ```bash
-# 从源码构建（需要 Rust 环境）
+# Build from source (requires Rust environment)
 git clone https://github.com/your-org/monox.git
 cd monox
 cargo make build
 
-# 将可执行文件添加到 PATH
+# Add executable to PATH
 cp target/release/monox /usr/local/bin/
 ```
 
-### 初始化配置
+### Initialize Configuration
 
-在您的 monorepo 项目根目录运行：
+Run in your monorepo project root directory:
 
 ```bash
 monox init
 ```
 
-这将创建一个 `monox.toml` 配置文件。
+This will create a `monox.toml` configuration file.
 
-### 基本使用
+### Basic Usage
 
-#### analyze - 依赖分析
+#### analyze - Dependency Analysis
 
 ```bash
-# 分析项目依赖关系和构建阶段
+# Analyze project dependencies and build stages
 monox analyze
 
-# 分析指定包及其依赖链（单包分析）
+# Analyze specific package and its dependency chain (single package analysis)
 monox analyze --package @your-org/package-name
 
-# 查看单包的详细依赖信息
+# View detailed dependency information for single package
 monox analyze --package @your-org/package-name --detail --verbose
 
-# JSON 格式输出
+# JSON format output
 monox analyze --format json
 ```
 
-#### run - 执行任务
+#### run - Execute Tasks
 
 ```bash
-# 构建所有包（按依赖顺序）
+# Build all packages (in dependency order)
 monox run --all --command build
 
-# 运行指定包及其依赖
+# Run specific package and its dependencies
 monox run @your-org/package-name --command build
 
-# 详细模式显示执行过程
+# Verbose mode to show execution process
 monox run --all --command build --verbose
 ```
 
-#### exec - 执行预定义任务
+#### exec - Execute Predefined Tasks
 
 ```bash
-# 执行预定义任务
+# Execute predefined tasks
 monox exec build-all
 
-# 详细模式
+# Verbose mode
 monox exec test-all --verbose
 ```
 
-#### check - 健康检查
+#### check - Health Check
 
 ```bash
-# 检查项目健康状态
+# Check project health status
 monox check --circular --versions --outdated
 
-# 详细的循环依赖路径信息
+# Detailed circular dependency path information
 monox check --circular --detail --verbose
 
-# JSON 格式输出检查结果
+# JSON format output for check results
 monox check --versions --format json
 ```
 
-#### fix - 问题修复
+#### fix - Problem Resolution
 
 ```bash
-# 同步项目依赖至项目使用最高版本
+# Sync project dependencies to the highest version used in the project
 monox fix
 
-# 预演模式（不实际修改）
+# Dry-run mode (no actual modifications)
 monox fix --dry-run
 ```
 
-## 📋 命令参考
+## 📋 Command Reference
 
-### 全局选项
-
-```bash
--v, --verbose           显示详细执行过程
---no-color              禁用彩色输出
---no-progress           禁用进度显示
--j, --max-concurrency   设置最大并发数
---timeout               设置任务超时时间（秒）
---retry                 设置重试次数
---continue-on-failure   失败时继续执行
--C, --workspace-root    指定工作区根目录
--l, --language          设置界面语言 (en_us, zh_cn)
-```
-
-### 主要命令
-
-#### `analyze` - 依赖分析
+### Global Options
 
 ```bash
-monox analyze                              # 分析并显示构建阶段
-monox analyze --format json               # 输出 JSON 格式
-monox analyze --verbose                    # 显示详细依赖关系
-monox analyze --package <package-name>    # 分析指定单个包及其依赖链
-monox analyze --package <package-name> --detail  # 单包分析显示详细信息
+-v, --verbose           Show detailed execution process
+--no-color              Disable colored output
+--no-progress           Disable progress display
+-j, --max-concurrency   Set maximum concurrency
+--timeout               Set task timeout (seconds)
+--retry                 Set retry count
+--continue-on-failure   Continue execution on failure
+-C, --workspace-root    Specify workspace root directory
+-l, --language          Set interface language (en_us, zh_cn)
 ```
 
-#### `run` - 执行命令
+### Main Commands
+
+#### `analyze` - Dependency Analysis
 
 ```bash
-monox run <package> --command <cmd>    # 运行指定包的命令
-monox run --all --command <cmd>        # 运行所有包的命令
-monox run --all --command build -v     # 详细模式显示执行过程
+monox analyze                              # Analyze and display build stages
+monox analyze --format json               # Output in JSON format
+monox analyze --verbose                    # Show detailed dependency relationships
+monox analyze --package <package-name>    # Analyze specific single package and its dependency chain
+monox analyze --package <package-name> --detail  # Single package analysis with detailed information
 ```
 
-#### `exec` - 执行预定义任务
+#### `run` - Execute Commands
 
 ```bash
-monox exec <task-name>           # 执行 monox.toml 中定义的任务
-monox exec build-all --verbose   # 详细模式执行任务
+monox run <package> --command <cmd>    # Run command for specific package
+monox run --all --command <cmd>        # Run command for all packages
+monox run --all --command build -v     # Verbose mode execution
 ```
 
-#### `check` - 健康检查
+#### `exec` - Execute Predefined Tasks
 
 ```bash
-monox check --circular           # 检查循环依赖
-monox check --versions           # 检查版本冲突
-monox check --outdated           # 检查过期依赖
-monox check --circular --detail  # 显示详细循环路径
+monox exec <task-name>           # Execute task defined in monox.toml
+monox exec build-all --verbose   # Execute task in verbose mode
 ```
 
-#### `fix` - 问题修复
+#### `check` - Health Check
 
 ```bash
-monox fix --versions             # 修复版本不一致
-monox fix --dry-run             # 预演模式，不实际修改
+monox check --circular           # Check circular dependencies
+monox check --versions           # Check version conflicts
+monox check --outdated           # Check outdated dependencies
+monox check --circular --detail  # Show detailed circular paths
 ```
 
-#### `init` - 初始化
+#### `fix` - Problem Resolution
 
 ```bash
-monox init                      # 初始化配置文件
+monox fix --versions             # Fix version inconsistencies
+monox fix --dry-run             # Dry-run mode, no actual modifications
 ```
 
-## ⚙️ 配置文件
+#### `init` - Initialize
 
-### monox.toml 配置示例
+```bash
+monox init                      # Initialize configuration file
+```
+
+## ⚙️ Configuration File
+
+### monox.toml Configuration Example
 
 ```toml
 [workspace]
 root = "."
 package_manager = "pnpm"  # pnpm | npm | yarn
-ignore = [                # 排除扫描的目录或文件模式
+ignore = [                # Directories or file patterns to exclude from scanning
     "dist",
     "build",
     ".git",
     "*.tmp"
 ]
 
-# 预定义任务
+# Predefined tasks
 [[tasks]]
 name = "build-all"
 pkg_name = "*"
-desc = "构建所有包"
+desc = "Build all packages"
 command = "build"
 
 [[tasks]]
 name = "test-system"
 pkg_name = "@your-org/system"
-desc = "测试系统核心包"
+desc = "Test system core package"
 command = "test"
 
-# 执行配置
+# Execution configuration
 [execution]
-max_concurrency = 4        # 最大并发数
-task_timeout = 300         # 任务超时（秒）
-retry_count = 0            # 重试次数
-continue_on_failure = false # 失败时是否继续
+max_concurrency = 4        # Maximum concurrency
+task_timeout = 300         # Task timeout (seconds)
+retry_count = 0            # Retry count
+continue_on_failure = false # Continue on failure
 
-# 输出配置
+# Output configuration
 [output]
-show_progress = true       # 显示进度条
-verbose = false           # 详细输出
-colored = true            # 彩色输出
+show_progress = true       # Show progress bar
+verbose = false           # Verbose output
+colored = true            # Colored output
 
-# 国际化配置
+# Internationalization configuration
 [i18n]
-language = "zh_cn"        # 界面语言 (en_us, zh_cn)
+language = "zh_cn"        # Interface language (en_us, zh_cn)
 ```
 
-### 配置参数说明
+### Configuration Parameters
 
-#### [workspace] - 工作空间
+#### [workspace] - Workspace
 
-- `root`: 工作目录根路径，默认 "."
-- `package_manager`: 包管理器类型，支持 "pnpm"、"npm"、"yarn"
-- `ignore`: 排除扫描的目录或文件模式，支持 glob 通配符。注意：`node_modules` 目录始终被排除，无需配置
+- `root`: Working directory root path, default "."
+- `package_manager`: Package manager type, supports "pnpm", "npm", "yarn"
+- `ignore`: Directories or file patterns to exclude from scanning, supports glob patterns. Note: `node_modules` directory is always excluded by default
 
-#### [[tasks]] - 任务定义
+#### [[tasks]] - Task Definition
 
-- `name`: 任务名称，用于 `monox exec <name>`
-- `pkg_name`: 包名，"\*" 表示所有包
-- `desc`: 任务描述（可选）
-- `command`: 执行的命令
+- `name`: Task name, used for `monox exec <name>`
+- `pkg_name`: Package name, "*" means all packages
+- `desc`: Task description (optional)
+- `command`: Command to execute
 
-#### [execution] - 执行控制
+#### [execution] - Execution Control
 
-- `max_concurrency`: 最大并发任务数，默认为 CPU 核心数
-- `task_timeout`: 单个任务超时时间（秒），默认 300
-- `retry_count`: 失败重试次数，默认 0
-- `continue_on_failure`: 失败时是否继续，默认 false
+- `max_concurrency`: Maximum concurrent tasks, defaults to CPU core count
+- `task_timeout`: Single task timeout (seconds), default 300
+- `retry_count`: Retry count on failure, default 0
+- `continue_on_failure`: Whether to continue on failure, default false
 
-#### [output] - 输出控制
+#### [output] - Output Control
 
-- `show_progress`: 是否显示进度条，默认 true
-- `verbose`: 是否详细输出，默认 false
-- `colored`: 是否彩色输出，默认 true
+- `show_progress`: Whether to show progress bar, default true
+- `verbose`: Whether to show verbose output, default false
+- `colored`: Whether to use colored output, default true
 
-#### [i18n] - 国际化
+#### [i18n] - Internationalization
 
-- `language`: 界面语言，支持 "en_us"（英语）和 "zh_cn"（简体中文）
+- `language`: Interface language, supports "en_us" (English) and "zh_cn" (Simplified Chinese)
 
-## 🌍 国际化支持
+## 🌍 Internationalization Support
 
-MonoX 提供完整的双语支持，所有用户界面文本都已国际化：
+MonoX provides complete bilingual support with all user interface texts internationalized:
 
-### 语言选择优先级
+### Language Selection Priority
 
-1. 命令行参数 `--language` 或 `-l`
-2. 配置文件 `monox.toml` 中的设置
-3. 系统默认（英语）
+1. Command line argument `--language` or `-l`
+2. Settings in `monox.toml` configuration file
+3. System default (English)
 
-### 使用示例
+### Usage Examples
 
 ```bash
-# 使用中文界面
+# Use Chinese interface
 monox analyze -l zh_cn
 
-# 使用英文界面
+# Use English interface
 monox run --all --command build --language en_us
 ```
 
-### 支持的语言
-- **zh_cn**: 简体中文 - 完整本地化支持
-- **en_us**: 美式英语 - 标准英文界面
+### Supported Languages
+- **zh_cn**: Simplified Chinese - Complete localization support
+- **en_us**: American English - Standard English interface
 
-## 📦 单包分析功能
+## 📦 Single Package Analysis Feature
 
-MonoX 支持对指定包进行精确的依赖分析，这在大型 monorepo 项目中特别有用：
+MonoX supports precise dependency analysis for specific packages, which is particularly useful in large monorepo projects:
 
-### 功能特点
+### Features
 
-- **精确范围**：只分析目标包及其直接依赖链，不包含无关包
-- **构建优化**：显示构建目标包所需的最小依赖集合
-- **快速诊断**：快速了解特定包的依赖状况
-- **多格式输出**：支持表格和 JSON 格式输出
+- **Precise Scope**: Only analyze the target package and its direct dependency chain, excluding unrelated packages
+- **Build Optimization**: Show the minimal dependency set required to build the target package
+- **Quick Diagnosis**: Quickly understand the dependency status of specific packages
+- **Multiple Output Formats**: Support both table and JSON format output
 
-### 使用示例
+### Usage Examples
 
 ```bash
-# 基本单包分析
+# Basic single package analysis
 monox analyze --package @your-org/components
 
-# 输出示例：
-# ◇ 分析结果
-# ● 总包数: 1
-# ▪ 构建阶段数: 3
-# ◦ 有工作区依赖的包: 1
+# Output example:
+# ◇ Analysis Results
+# ● Total packages: 1
+# ▪ Build stages: 3
+# ◦ Packages with workspace dependencies: 1
 #
-# ▪ 构建阶段
+# ▪ Build Stages
 # ─────────────────────────
-# 阶段 1 (1 个包):
+# Stage 1 (1 package):
 #   ● @your-org/utils
 #
-# 阶段 2 (1 个包):
+# Stage 2 (1 package):
 #   ● @your-org/core
 #
-# 阶段 3 (1 个包):
+# Stage 3 (1 package):
 #   ● @your-org/components
 
-# 详细信息模式
+# Detailed information mode
 monox analyze --package @your-org/components --detail
 
-# JSON 格式输出（便于脚本处理）
+# JSON format output (convenient for script processing)
 monox analyze --package @your-org/components --format json
 ```
 
-## 🎨 用户界面特性
+## 🎨 User Interface Features
 
-### 两种输出模式
+### Two Output Modes
 
-#### 刷新模式（默认）
-- 实时更新的进度条和状态显示
-- 动态 Spinner 动画
-- 多包并行执行状态追踪
-- 完成后保留满进度条显示
+#### Refresh Mode (Default)
+- Real-time updated progress bars and status display
+- Dynamic Spinner animations
+- Multi-package parallel execution status tracking
+- Retain full progress bar display after completion
 
 ```
-[MONOX] ⠧ ████████████░░░░░░░░ 阶段 3/5
-[MONOX] 正在处理包: (2/5)
+[MONOX] ⠧ ████████████░░░░░░░░ Stage 3/5
+[MONOX] Processing packages: (2/5)
 [MONOX]   ○ package-a
-[MONOX]   ▸ package-b    ← 正在运行  
+[MONOX]   ▸ package-b    ← Running  
 [MONOX]   ○ package-c
-[MONOX]   ● package-d    ← 已完成
+[MONOX]   ● package-d    ← Completed
 [MONOX]   ○ package-e
 ```
 
-#### 详细模式（--verbose）
-- 完整的执行日志输出
-- 每个任务的开始/完成时间
-- 详细的错误信息和堆栈
-- 性能统计信息
+#### Verbose Mode (--verbose)
+- Complete execution log output
+- Start/completion time for each task
+- Detailed error information and stack traces
+- Performance statistics
 
 ```
-[MONOX] ▪ 开始任务: build 在 @your-org/utils
-[MONOX] ● 任务 build 在 @your-org/utils 中完成，耗时 1250ms
-[MONOX] ▪ 开始任务: build 在 @your-org/core
+[MONOX] ▪ Starting task: build in @your-org/utils
+[MONOX] ● Task build completed in @your-org/utils, took 1250ms
+[MONOX] ▪ Starting task: build in @your-org/core
 ```
 
-### 国际化界面
-- 所有提示信息支持中英文
-- 数字和时间格式本地化
-- 错误信息完整翻译
+### Internationalized Interface
+- All prompts support Chinese and English
+- Localized number and time formats
+- Complete error message translation
 
-## 📊 使用场景
+## 📊 Use Cases
 
-### 典型工作流
+### Typical Workflow
 
-1. **项目初始化**
+1. **Project Initialization**
 
    ```bash
    monox init
-   # 编辑 monox.toml 配置文件
+   # Edit monox.toml configuration file
    ```
 
-2. **依赖分析**
+2. **Dependency Analysis**
 
    ```bash
-   # 分析整个工作区
+   # Analyze entire workspace
    monox analyze --verbose
 
-   # 分析特定包及其依赖链
+   # Analyze specific package and its dependency chain
    monox analyze --package @your-org/core --detail
    ```
 
-3. **健康检查**
+3. **Health Check**
 
    ```bash
    monox check --circular --versions --outdated
-   # 确保项目状态良好
+   # Ensure project is in good state
    ```
 
-4. **构建执行**
+4. **Build Execution**
 
    ```bash
    monox run --all --command build --verbose
-   # 按依赖顺序构建所有包
+   # Build all packages in dependency order
    ```
 
-5. **测试运行**
+5. **Test Execution**
    ```bash
    monox exec test-all
-   # 执行预定义的测试任务
+   # Execute predefined test tasks
    ```
 
-### 单包分析和调试
+### Single Package Analysis and Debugging
 
 ```bash
-# 分析特定包的依赖关系
+# Analyze dependency relationships of specific package
 monox analyze --package @your-org/core
 
-# 查看单包的详细依赖信息
+# View detailed dependency information for single package
 monox analyze --package @your-org/core --detail --verbose
 
-# 以 JSON 格式输出单包分析结果
+# Output single package analysis results in JSON format
 monox analyze --package @your-org/core --format json
 
-# 分析多个包（分别执行）
+# Analyze multiple packages (execute separately)
 monox analyze --package @your-org/utils
 monox analyze --package @your-org/components
 ```
 
-### 调试和诊断
+### Debugging and Diagnostics
 
 ```bash
-# 详细模式：查看构建过程和进度
+# Verbose mode: view build process and progress
 monox run --all --command build --verbose
 
-# 组合使用：最完整的信息输出
+# Combined usage: most complete information output
 monox analyze --verbose --detail
 ```
 
-## 🔧 技术特性
+## 🔧 Technical Features
 
-### 核心引擎
-- **依赖分析器**: 基于 petgraph 的图算法，支持循环检测和拓扑排序
-- **任务执行器**: 异步并发执行，智能调度和资源管理
-- **缓存系统**: 智能缓存提升重复操作性能
+### Core Engine
+- **Dependency Analyzer**: Graph algorithms based on petgraph, supporting cycle detection and topological sorting
+- **Task Executor**: Asynchronous concurrent execution, intelligent scheduling and resource management
+- **Cache System**: Smart caching to improve repeated operation performance
 
-### 用户体验
-- **智能UI**: 非详细模式下动态刷新界面，详细模式下完整日志输出
-- **进度追踪**: 实时进度条、任务状态、执行时间统计
-- **错误处理**: 友好的错误信息、国际化错误消息、失败重试机制
+### User Experience
+- **Smart UI**: Dynamic refresh interface in non-verbose mode, complete log output in verbose mode
+- **Progress Tracking**: Real-time progress bars, task status, execution time statistics
+- **Error Handling**: Friendly error messages, internationalized error messages, failure retry mechanism
 
-### 架构设计
-- **模块化**: 清晰的模块边界和职责分离
-- **类型安全**: 充分利用 Rust 类型系统保证安全性
-- **异步优先**: 基于 tokio 的高性能异步运行时
+### Architecture Design
+- **Modular**: Clear module boundaries and separation of responsibilities
+- **Type Safety**: Full utilization of Rust type system for safety guarantees
+- **Async First**: High-performance async runtime based on tokio
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎贡献代码！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解开发指南。
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 相关链接
+## 🔗 Related Links
 
-- [设计文档](DESIGN.md)
-- [开发任务清单](TODOLIST.md)
-- [更新日志](CHANGELOG.md)
-- [问题反馈](https://github.com/your-org/monox/issues)
+- [中文文档](README.zh.md)
+- [Design Document](DESIGN.md)
+- [Development Task List](TODOLIST.md)
+- [Change Log](CHANGELOG.md)
+- [Issue Tracking](https://github.com/your-org/monox/issues) 
