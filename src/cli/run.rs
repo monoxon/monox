@@ -35,13 +35,17 @@ pub struct RunArgs {
     pub all: bool,
 }
 
-pub fn run(args: RunArgs) -> Result<()> {
+pub async fn run(args: RunArgs) -> Result<()> {
     Logger::info(tf!("run.start", &args.command));
 
     let executor = TaskExecutor::new_from_config()?;
     match (args.all, args.package_name) {
-        (true, _) => executor.execute("*", &args.command, Some(true)),
-        (false, Some(package_name)) => executor.execute(&package_name, &args.command, Some(false)),
+        (true, _) => executor.execute("*", &args.command, Some(true)).await,
+        (false, Some(package_name)) => {
+            executor
+                .execute(&package_name, &args.command, Some(false))
+                .await
+        }
         (false, None) => anyhow::bail!(t!("run.missing_package_or_all")),
     }
 }

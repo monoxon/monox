@@ -22,6 +22,10 @@ use super::colors::Colors;
 pub struct Logger;
 
 impl Logger {
+    pub fn debug<S: AsRef<str>>(msg: S) {
+        println!("{} {}", Colors::debug("[DEBUG]"), msg.as_ref());
+    }
+
     pub fn info<S: AsRef<str>>(msg: S) {
         println!("{} {}", Colors::info("[MONOX]"), msg.as_ref());
     }

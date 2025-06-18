@@ -24,10 +24,10 @@ mod utils;
 use anyhow::Result;
 use models::config::Config;
 
-fn main() -> Result<()> {
-    use crate::utils::logger::Logger;
+#[tokio::main]
+async fn main() -> Result<()> {
     // 初始化配置
     Config::initialize()?;
 
-    cli::run_cli()
+    cli::run_cli().await
 }

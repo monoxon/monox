@@ -91,7 +91,7 @@ pub enum Commands {
     Run(RunArgs),
 }
 
-pub fn run_cli() -> Result<()> {
+pub async fn run_cli() -> Result<()> {
     let cli = Cli::parse();
 
     // 构建运行时参数来覆盖配置
@@ -105,7 +105,7 @@ pub fn run_cli() -> Result<()> {
         Commands::Check(args) => handle_check(args),
         Commands::Fix(args) => handle_fix(args),
         Commands::Init(args) => handle_init(args),
-        Commands::Run(args) => run(args),
+        Commands::Run(args) => run(args).await,
     }
 }
 

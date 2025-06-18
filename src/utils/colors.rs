@@ -22,6 +22,7 @@ pub mod ansi {
     pub const RESET: &str = "\x1b[0m";
 
     /// 前景色
+    pub const BLUE: &str = "\x1b[34m";
     pub const RED: &str = "\x1b[31m";
     pub const GREEN: &str = "\x1b[32m";
     pub const YELLOW: &str = "\x1b[33m";
@@ -31,6 +32,9 @@ pub mod ansi {
 /// 日志级别颜色主题
 pub mod log_colors {
     use super::ansi;
+
+    /// 调试日志颜色 (蓝色)
+    pub const DEBUG: &str = ansi::BLUE;
 
     /// 信息日志颜色 (青色)
     pub const INFO: &str = ansi::CYAN;
@@ -52,6 +56,11 @@ impl Colors {
     /// 为文本添加颜色
     pub fn colorize(text: &str, color: &str) -> String {
         format!("{}{}{}", color, text, ansi::RESET)
+    }
+
+    /// 调试颜色
+    pub fn debug(text: &str) -> String {
+        Self::colorize(text, log_colors::DEBUG)
     }
 
     /// 信息颜色
