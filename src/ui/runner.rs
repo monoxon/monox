@@ -56,8 +56,6 @@ pub struct TaskInfo {
     pub start_time: Option<Instant>,
     /// 结束时间
     pub end_time: Option<Instant>,
-    /// 输出日志
-    pub output: Vec<String>,
     /// 错误信息
     pub error: Option<String>,
 }
@@ -72,8 +70,6 @@ pub struct RunnerUI {
     total_stages: usize,
     /// 是否显示详细输出
     verbose: bool,
-    /// 是否启用彩色输出
-    colored: bool,
     /// 是否显示进度条
     show_progress: bool,
     /// 已渲染的行数（用于清除屏幕）
@@ -94,7 +90,7 @@ pub struct RunnerUI {
 
 impl RunnerUI {
     /// 创建新的任务 UI
-    pub fn new(verbose: bool, colored: bool, show_progress: bool) -> Self {
+    pub fn new(verbose: bool, show_progress: bool) -> Self {
         let supports_refresh = !verbose && atty::is(atty::Stream::Stdout);
 
         Self {
@@ -102,7 +98,6 @@ impl RunnerUI {
             current_stage: 0,
             total_stages: 0,
             verbose,
-            colored,
             show_progress,
             rendered_lines: 0,
             supports_refresh,
@@ -132,7 +127,7 @@ impl RunnerUI {
         self.current_stage_packages = self
             .tasks
             .values()
-            .filter(|task| {
+            .filter(|_| {
                 // 这里需要根据实际情况判断哪些任务属于当前阶段
                 // 暂时显示所有任务的包名
                 true
@@ -167,7 +162,6 @@ impl RunnerUI {
             status: TaskStatus::Pending,
             start_time: None,
             end_time: None,
-            output: Vec::new(),
             error: None,
         };
         self.tasks.insert(task_id, task_info);
@@ -218,6 +212,28 @@ impl RunnerUI {
             if self.verbose {
                 let task_clone = task.clone();
                 self.render_task_failed(&task_clone);
+            } else {
+                self.refresh_display();
+                // 检查是否所有任务都完成了
+                if !self.has_running_tasks() {
+                    self.stop_refresh_timer();
+                }
+            }
+        }
+    }
+
+    /// 跳过任务
+    pub fn skip_task(&mut self, task_id: &str, reason: Option<String>) {
+        if let Some(task) = self.tasks.get_mut(task_id) {
+            task.status = TaskStatus::Skipped;
+            task.end_time = Some(Instant::now());
+            if let Some(reason) = reason {
+                task.error = Some(reason);
+            }
+
+            if self.verbose {
+                let task_clone = task.clone();
+                self.render_task_skipped(&task_clone);
             } else {
                 self.refresh_display();
                 // 检查是否所有任务都完成了
@@ -285,7 +301,15 @@ impl RunnerUI {
 
             // 当前阶段包列表
             if !self.current_stage_packages.is_empty() {
-                content.push_str(&format!("{}\n", t!("runner.processing_packages")));
+                // 计算当前阶段任务完成统计
+                let (completed, total) = self.get_current_stage_progress();
+                content.push_str(&format!(
+                    "{} ({}/{})\n",
+                    t!("runner.processing_packages"),
+                    completed,
+                    total
+                ));
+
                 for (i, package) in self.current_stage_packages.iter().enumerate() {
                     let status_icon = self.get_package_status_icon(package);
                     content.push_str(&format!("  {} {}\n", status_icon, package));
@@ -325,8 +349,6 @@ impl RunnerUI {
 
     /// 获取包的状态图标
     fn get_package_status_icon(&self, package: &str) -> &'static str {
-        use crate::utils::constants::icons;
-
         // 查找该包的任务状态
         for task in self.tasks.values() {
             if task.package == package {
@@ -341,6 +363,27 @@ impl RunnerUI {
         }
 
         "○" // 默认待处理状态
+    }
+
+    /// 获取当前阶段的任务完成进度
+    fn get_current_stage_progress(&self) -> (usize, usize) {
+        let total = self.current_stage_packages.len();
+        let completed = self
+            .current_stage_packages
+            .iter()
+            .filter(|package| {
+                // 查找该包的任务，检查是否已完成（成功、失败或跳过）
+                self.tasks.values().any(|task| {
+                    task.package == **package
+                        && matches!(
+                            task.status,
+                            TaskStatus::Success | TaskStatus::Failed | TaskStatus::Skipped
+                        )
+                })
+            })
+            .count();
+
+        (completed, total)
     }
 
     /// 检查是否有正在运行的任务
@@ -442,10 +485,6 @@ impl RunnerUI {
 
     /// 渲染任务失败
     fn render_task_failed(&self, task: &TaskInfo) {
-        use crate::utils::constants::icons;
-        use crate::utils::logger::Logger;
-        use crate::{t, tf};
-
         Logger::error(format!(
             "  {} {}",
             icons::ERROR,
@@ -454,6 +493,19 @@ impl RunnerUI {
 
         if let Some(error) = &task.error {
             Logger::error(format!("    {}", error));
+        }
+    }
+
+    /// 渲染任务跳过
+    fn render_task_skipped(&self, task: &TaskInfo) {
+        Logger::warn(format!(
+            "  {} {}",
+            icons::SKIP,
+            tf!("runner.task_skipped", task.name, task.package)
+        ));
+
+        if let Some(reason) = &task.error {
+            Logger::warn(format!("    {}", reason));
         }
     }
 
@@ -485,7 +537,7 @@ impl RunnerUI {
             self.clear_screen();
 
             // 显示最终汇总
-            let mut summary_lines = vec![
+            let summary_lines = vec![
                 format!("\n{} {}", icons::COMPLETE, t!("runner.execution_summary")),
                 "═══════════════════════════════════════".to_string(),
                 format!(
@@ -542,56 +594,6 @@ impl RunnerUI {
                 Logger::warn(format!("○ {}", tf!("runner.skipped_tasks", skipped_tasks)));
             }
         }
-    }
-}
-
-/// 进度条组件（TaskUI 的子组件）
-pub struct ProgressBar {
-    /// 当前进度
-    current: usize,
-    /// 总数
-    total: usize,
-    /// 进度条宽度
-    width: usize,
-    /// 是否启用彩色
-    colored: bool,
-}
-
-impl ProgressBar {
-    /// 创建新的进度条
-    pub fn new(total: usize, width: usize, colored: bool) -> Self {
-        Self {
-            current: 0,
-            total,
-            width,
-            colored,
-        }
-    }
-
-    /// 更新进度
-    pub fn update(&mut self, current: usize) {
-        self.current = current;
-    }
-
-    /// 渲染进度条
-    pub fn render(&self) -> String {
-        use crate::utils::constants::progress_chars;
-
-        if self.total == 0 {
-            return String::new();
-        }
-
-        let percentage = (self.current as f64 / self.total as f64 * 100.0) as usize;
-        let filled_width = (self.current as f64 / self.total as f64 * self.width as f64) as usize;
-        let empty_width = self.width - filled_width;
-
-        let filled_part = progress_chars::FILLED.repeat(filled_width);
-        let empty_part = progress_chars::EMPTY.repeat(empty_width);
-
-        format!(
-            "[{}{}] {}/{} ({}%)",
-            filled_part, empty_part, self.current, self.total, percentage
-        )
     }
 }
 

@@ -85,6 +85,24 @@ impl Spinner {
         }
     }
 
+    /// 手动更新显示（用于外部控制的场景）
+    /// 该方法会立即更新显示而不依赖内部循环
+    pub fn manual_update(&self, new_message: String, frame: usize) {
+        if let Ok(mut msg) = self.message.lock() {
+            *msg = new_message.clone();
+        }
+
+        let spinner_char = spinner_chars::BASE[frame % spinner_chars::BASE.len()];
+        print!("\r{} {}", spinner_char, new_message);
+        io::stdout().flush().unwrap();
+    }
+
+    /// 清除当前显示行
+    pub fn clear_line(&self) {
+        print!("\r");
+        io::stdout().flush().unwrap();
+    }
+
     /// 停止 Spinner
     pub fn stop(&mut self) {
         if !self.running.load(Ordering::Relaxed) {

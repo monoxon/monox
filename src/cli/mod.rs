@@ -25,6 +25,7 @@ pub mod run;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+use crate::models::config::{Config, RuntimeArgs};
 use analyze::{handle_analyze, AnalyzeArgs};
 use check::{handle_check, CheckArgs};
 use exec::{exec, ExecArgs};
@@ -101,12 +102,11 @@ pub async fn run_cli() -> Result<()> {
     // 构建运行时参数来覆盖配置
     let runtime_args = build_runtime_args(&cli);
     // 合并运行时参数到全局配置
-    use crate::models::config::Config;
     Config::merge_runtime_args(runtime_args)?;
 
     match cli.command {
         Commands::Analyze(args) => handle_analyze(args),
-        Commands::Check(args) => handle_check(args),
+        Commands::Check(args) => handle_check(args).await,
         Commands::Exec(args) => exec(args).await,
         Commands::Fix(args) => handle_fix(args),
         Commands::Init(args) => handle_init(args),
@@ -116,8 +116,6 @@ pub async fn run_cli() -> Result<()> {
 
 /// 从 CLI 参数构建运行时参数
 fn build_runtime_args(cli: &Cli) -> crate::models::config::RuntimeArgs {
-    use crate::models::config::RuntimeArgs;
-
     RuntimeArgs {
         verbose: if cli.verbose { Some(true) } else { None },
         colored: if cli.no_color { Some(false) } else { None },

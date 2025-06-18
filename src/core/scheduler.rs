@@ -57,8 +57,11 @@ pub struct TaskStatus {
     pub is_success: bool,
 }
 
+/// 进度回调函数类型 (completed, total)
+pub type ProgressCallback = Arc<dyn Fn(usize, usize) + Send + Sync>;
+
 /// 调度器配置
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SchedulerConfig {
     /// 最大并发任务数
     pub max_concurrency: usize,
@@ -68,6 +71,26 @@ pub struct SchedulerConfig {
     pub fail_fast: bool,
     /// 是否显示详细日志
     pub verbose: bool,
+    /// 进度回调函数 (completed, total)
+    pub progress_callback: Option<ProgressCallback>,
+    /// 任务完成回调函数
+    pub task_completed_callback: Option<Arc<dyn Fn(&str, &TaskResult<()>) + Send + Sync>>,
+}
+
+impl std::fmt::Debug for SchedulerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SchedulerConfig")
+            .field("max_concurrency", &self.max_concurrency)
+            .field("timeout", &self.timeout)
+            .field("fail_fast", &self.fail_fast)
+            .field("verbose", &self.verbose)
+            .field("has_progress_callback", &self.progress_callback.is_some())
+            .field(
+                "has_task_completed_callback",
+                &self.task_completed_callback.is_some(),
+            )
+            .finish()
+    }
 }
 
 impl Default for SchedulerConfig {
@@ -77,6 +100,8 @@ impl Default for SchedulerConfig {
             timeout: None,
             fail_fast: false,
             verbose: false,
+            progress_callback: None,
+            task_completed_callback: None,
         }
     }
 }
@@ -91,6 +116,12 @@ pub struct AsyncTaskScheduler {
     task_status: Arc<RwLock<HashMap<String, TaskStatus>>>,
     /// 是否应该停止执行
     should_stop: Arc<RwLock<bool>>,
+    /// 已完成任务计数
+    completed_count: Arc<RwLock<usize>>,
+    /// 成功任务计数
+    successful_count: Arc<RwLock<usize>>,
+    /// 失败任务计数
+    failed_count: Arc<RwLock<usize>>,
 }
 
 impl AsyncTaskScheduler {
@@ -99,12 +130,18 @@ impl AsyncTaskScheduler {
         let semaphore = Arc::new(Semaphore::new(config.max_concurrency));
         let task_status = Arc::new(RwLock::new(HashMap::new()));
         let should_stop = Arc::new(RwLock::new(false));
+        let completed_count = Arc::new(RwLock::new(0));
+        let successful_count = Arc::new(RwLock::new(0));
+        let failed_count = Arc::new(RwLock::new(0));
 
         Self {
             config,
             semaphore,
             task_status,
             should_stop,
+            completed_count,
+            successful_count,
+            failed_count,
         }
     }
 
@@ -151,6 +188,21 @@ impl AsyncTaskScheduler {
         // 记录任务完成
         let is_success = matches!(result, TaskResult::Success(_));
         self.record_task_completion(&task_id, is_success).await;
+
+        // 更新计数器并调用进度回调
+        self.update_counters_and_progress(is_success).await;
+
+        // 调用任务完成回调
+        if let Some(callback) = &self.config.task_completed_callback {
+            // 对于泛型结果，我们创建一个简化的 TaskResult<()>
+            let simple_result = match &result {
+                TaskResult::Success(_) => TaskResult::Success(()),
+                TaskResult::Failed(err) => TaskResult::Failed(err.clone()),
+                TaskResult::Timeout => TaskResult::Timeout,
+                TaskResult::Cancelled => TaskResult::Cancelled,
+            };
+            callback(&task_id, &simple_result);
+        }
 
         // 如果配置了 fail_fast 且任务失败，则停止所有其他任务
         if self.config.fail_fast && !is_success {
@@ -209,8 +261,11 @@ impl AsyncTaskScheduler {
             Logger::info(tf!("scheduler.batch_start", tasks.len()));
         }
 
-        // 重置停止标志
+        // 重置停止标志和计数器
         *self.should_stop.write().await = false;
+        *self.completed_count.write().await = 0;
+        *self.successful_count.write().await = 0;
+        *self.failed_count.write().await = 0;
 
         // 创建任务句柄
         let mut handles: Vec<JoinHandle<(String, TaskResult<T>)>> = Vec::new();
@@ -251,6 +306,22 @@ impl AsyncTaskScheduler {
         results
     }
 
+    /// 专门用于依赖检查的简化接口
+    pub async fn execute_dependency_checks<F>(
+        &self,
+        dependencies: Vec<(String, F)>,
+    ) -> HashMap<String, TaskResult<()>>
+    where
+        F: Future<Output = Result<()>> + Send + 'static,
+    {
+        let results = self.execute_batch(dependencies).await;
+
+        // 转换为 HashMap 便于查找
+        results
+            .into_iter()
+            .collect::<HashMap<String, TaskResult<()>>>()
+    }
+
     /// 获取任务状态快照
     pub async fn get_task_status(&self, task_id: &str) -> Option<TaskStatus> {
         self.task_status.read().await.get(task_id).cloned()
@@ -278,27 +349,37 @@ impl AsyncTaskScheduler {
         }
     }
 
-    /// 获取执行统计信息
-    pub async fn get_execution_summary(&self) -> ExecutionSummary {
-        let task_status = self.task_status.read().await;
-        let total_tasks = task_status.len();
-        let completed_tasks = task_status.values().filter(|s| s.is_completed).count();
-        let successful_tasks = task_status.values().filter(|s| s.is_success).count();
-        let failed_tasks = completed_tasks - successful_tasks;
+    /// 获取当前执行进度
+    pub async fn get_progress(&self) -> (usize, usize) {
+        let completed = *self.completed_count.read().await;
+        let total = self.task_status.read().await.len();
 
-        let total_duration = task_status
-            .values()
-            .filter_map(|s| s.completed_at.map(|end| end.duration_since(s.started_at)))
-            .max()
-            .unwrap_or(Duration::from_secs(0));
+        (completed, total)
+    }
 
-        ExecutionSummary {
-            total_tasks,
-            completed_tasks,
-            successful_tasks,
-            failed_tasks,
-            total_duration,
-        }
+    /// 获取详细执行统计
+    pub async fn get_detailed_progress(&self) -> (usize, usize, usize, usize) {
+        let completed = *self.completed_count.read().await;
+        let total = self.task_status.read().await.len();
+        let successful = *self.successful_count.read().await;
+        let failed = *self.failed_count.read().await;
+
+        (completed, total, successful, failed)
+    }
+
+    /// 设置进度回调函数
+    pub fn with_progress_callback(mut self, callback: ProgressCallback) -> Self {
+        self.config.progress_callback = Some(callback);
+        self
+    }
+
+    /// 设置任务完成回调函数
+    pub fn with_task_completed_callback(
+        mut self,
+        callback: Arc<dyn Fn(&str, &TaskResult<()>) + Send + Sync>,
+    ) -> Self {
+        self.config.task_completed_callback = Some(callback);
+        self
     }
 
     /// 记录任务开始
@@ -326,6 +407,31 @@ impl AsyncTaskScheduler {
         }
     }
 
+    /// 更新计数器并调用进度回调
+    async fn update_counters_and_progress(&self, is_success: bool) {
+        // 更新计数器
+        {
+            let mut completed = self.completed_count.write().await;
+            *completed += 1;
+        }
+
+        if is_success {
+            let mut successful = self.successful_count.write().await;
+            *successful += 1;
+        } else {
+            let mut failed = self.failed_count.write().await;
+            *failed += 1;
+        }
+
+        // 调用进度回调
+        if let Some(callback) = &self.config.progress_callback {
+            let completed = *self.completed_count.read().await;
+            let total = self.task_status.read().await.len();
+
+            callback(completed, total);
+        }
+    }
+
     /// 为任务执行创建调度器克隆
     fn clone_for_task(&self) -> Self {
         Self {
@@ -333,64 +439,9 @@ impl AsyncTaskScheduler {
             semaphore: Arc::clone(&self.semaphore),
             task_status: Arc::clone(&self.task_status),
             should_stop: Arc::clone(&self.should_stop),
-        }
-    }
-}
-
-/// 执行统计摘要
-#[derive(Debug, Clone)]
-pub struct ExecutionSummary {
-    /// 总任务数
-    pub total_tasks: usize,
-    /// 完成的任务数
-    pub completed_tasks: usize,
-    /// 成功的任务数
-    pub successful_tasks: usize,
-    /// 失败的任务数
-    pub failed_tasks: usize,
-    /// 总执行时长
-    pub total_duration: Duration,
-}
-
-impl ExecutionSummary {
-    /// 打印执行摘要
-    pub fn print_summary(&self) {
-        use crate::utils::constants::icons;
-
-        Logger::info(format!(
-            "\n{} {}",
-            icons::SUMMARY,
-            t!("scheduler.execution_summary")
-        ));
-        Logger::info("═══════════════════════════════════════");
-
-        Logger::info(tf!("scheduler.summary_total", self.total_tasks));
-        Logger::info(tf!("scheduler.summary_completed", self.completed_tasks));
-        Logger::info(tf!("scheduler.summary_successful", self.successful_tasks));
-
-        if self.failed_tasks > 0 {
-            Logger::error(tf!("scheduler.summary_failed", self.failed_tasks));
-        }
-
-        Logger::info(tf!(
-            "scheduler.summary_duration",
-            self.total_duration.as_secs_f64()
-        ));
-
-        if self.failed_tasks == 0 && self.completed_tasks == self.total_tasks {
-            Logger::success(format!(
-                "{} {}",
-                icons::SUCCESS,
-                t!("scheduler.all_success")
-            ));
-        } else if self.successful_tasks > 0 {
-            Logger::warn(format!(
-                "{} {}",
-                icons::WARNING,
-                t!("scheduler.partial_success")
-            ));
-        } else {
-            Logger::error(format!("{} {}", icons::ERROR, t!("scheduler.all_failed")));
+            completed_count: Arc::clone(&self.completed_count),
+            successful_count: Arc::clone(&self.successful_count),
+            failed_count: Arc::clone(&self.failed_count),
         }
     }
 }

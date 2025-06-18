@@ -23,6 +23,4 @@ pub mod scheduler;
 // 重新导出常用类型
 pub use analyzer::DependencyAnalyzer;
 pub use executor::TaskExecutor;
-pub use scheduler::{
-    AsyncTaskScheduler, ExecutionSummary, SchedulerConfig, TaskResult as SchedulerTaskResult,
-};
+pub use scheduler::{AsyncTaskScheduler, SchedulerConfig, TaskResult as SchedulerTaskResult};

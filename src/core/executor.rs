@@ -108,7 +108,10 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
     task.start();
 
     if task.status == TaskStatus::Skipped {
-        if Config::get_verbose() {
+        if let Some(ui) = &ui {
+            let mut ui_guard = ui.lock().unwrap();
+            ui_guard.skip_task(&task_id, Some("脚本不存在".to_string()));
+        } else if Config::get_verbose() {
             Logger::warn(tf!(
                 "executor.task_skipped",
                 &task.package_name,
@@ -265,7 +268,19 @@ impl TaskExecutor {
             anyhow::bail!(tf!("run.script_not_found", package_name, command));
         }
 
-        Logger::info(tf!("run.found_executable_packages", 1, command));
+        // 计算所有阶段中包含该脚本的包数量
+        let executable_count = analysis_result
+            .stages
+            .iter()
+            .flat_map(|stage| stage.iter())
+            .filter(|pkg| pkg.scripts.contains_key(command))
+            .count();
+
+        Logger::info(tf!(
+            "run.found_executable_packages",
+            executable_count,
+            command
+        ));
 
         self.execute_stages(&analysis_result.stages, command).await
     }
@@ -280,7 +295,7 @@ impl TaskExecutor {
 
         // 非 verbose 模式下使用 UI 渲染
         let ui = if !verbose {
-            let runner_ui = RunnerUI::new(false, Config::get_colored().unwrap_or(true), true);
+            let runner_ui = RunnerUI::new(false, true);
             let ui = Arc::new(Mutex::new(runner_ui));
 
             // 设置自引用以支持定时器回调
@@ -366,6 +381,8 @@ impl TaskExecutor {
                 .map(|s| Duration::from_secs(s as u64)),
             fail_fast: !self.config.continue_on_error,
             verbose: self.config.verbose,
+            progress_callback: None,
+            task_completed_callback: None,
         };
 
         let scheduler = AsyncTaskScheduler::new(scheduler_config);

@@ -19,16 +19,19 @@
 use anyhow::Result;
 use clap::Args;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
+use std::collections::{BTreeMap, HashMap};
+use std::fs;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use crate::core::analyzer::DependencyAnalyzer;
+use crate::core::scheduler::{AsyncTaskScheduler, SchedulerConfig, TaskResult};
 use crate::models::config::Config;
 use crate::utils::colors::Colors;
+use crate::utils::constants::icons;
 use crate::utils::logger::Logger;
+use crate::utils::spinner::Spinner;
 use crate::{t, tf};
 
 /// 过期依赖信息
@@ -111,7 +114,7 @@ pub struct CheckArgs {
     pub detail: bool,
 }
 
-pub fn handle_check(args: CheckArgs) -> Result<()> {
+pub async fn handle_check(args: CheckArgs) -> Result<()> {
     Logger::info(t!("cli.check.start"));
 
     // 获取工作区根目录（从全局配置中获取）
@@ -141,7 +144,7 @@ pub fn handle_check(args: CheckArgs) -> Result<()> {
 
     // 检查过期依赖
     if check_outdated {
-        has_issues |= check_outdated_dependencies(&workspace_root, verbose, &args)?;
+        has_issues |= check_outdated_dependencies(&workspace_root, verbose, &args).await?;
     }
 
     // 输出总结
@@ -241,14 +244,12 @@ fn check_version_conflicts(
     Ok(true)
 }
 
-/// 检查过期依赖
-fn check_outdated_dependencies(
+/// 检查过期依赖（使用 scheduler 的新版本）
+async fn check_outdated_dependencies(
     workspace_root: &std::path::Path,
     verbose: bool,
     args: &CheckArgs,
 ) -> Result<bool> {
-    use crate::utils::spinner::Spinner;
-
     if verbose {
         Logger::info(t!("check.outdated.start"));
     }
@@ -276,171 +277,191 @@ fn check_outdated_dependencies(
         ));
     }
 
-    // 启动 spinner
-    let mut spinner = Spinner::new(tf!(
-        "check.outdated.checking_dependencies",
-        unique_dependencies.len()
-    ));
-    if !verbose {
-        spinner.start();
-    }
+    // 直接调用异步函数（已经在 tokio 运行时中）
+    let result = check_outdated_with_scheduler(unique_dependencies, verbose).await?;
 
-    // 实时显示过期依赖的共享状态
-    let outdated_deps = Arc::new(Mutex::new(Vec::new()));
-    let checked_count = Arc::new(Mutex::new(0));
-    let total_count = unique_dependencies.len();
-    let found_packages = Arc::new(Mutex::new(std::collections::HashSet::<String>::new()));
-
-    // 创建一个用于实时更新显示的线程
-    let display_outdated = Arc::clone(&outdated_deps);
-    let display_checked = Arc::clone(&checked_count);
-    let display_found = Arc::clone(&found_packages);
-    let display_spinner = if !verbose {
-        let spinner_clone = Arc::new(Mutex::new(spinner));
-        let spinner_ref = Arc::clone(&spinner_clone);
-
-        let handle = thread::spawn(move || loop {
-            let checked = *display_checked.lock().unwrap();
-            let outdated_count = display_found.lock().unwrap().len();
-
-            if checked >= total_count {
-                break;
-            }
-
-            let message = if outdated_count > 0 {
-                tf!(
-                    "check.outdated.progress_with_found",
-                    checked,
-                    total_count,
-                    outdated_count
-                )
-            } else {
-                tf!("check.outdated.progress", checked, total_count)
-            };
-
-            if let Ok(spinner) = spinner_ref.lock() {
-                spinner.update_message(message);
-            }
-
-            thread::sleep(std::time::Duration::from_millis(50));
-        });
-        Some((spinner_clone, handle))
-    } else {
-        None
-    };
-
-    // 使用多线程并发检查依赖
-    let mut handles = Vec::new();
-    let thread_count = calculate_optimal_thread_count(unique_dependencies.len());
-    let chunk_size = std::cmp::max(1, unique_dependencies.len() / thread_count);
-    let dependencies_vec: Vec<_> = unique_dependencies.into_iter().collect();
-
-    if verbose {
-        Logger::info(tf!("check.outdated.using_threads", thread_count));
-    }
-
-    for chunk in dependencies_vec.chunks(chunk_size) {
-        let chunk = chunk.to_vec();
-        let outdated_deps = Arc::clone(&outdated_deps);
-        let checked_count = Arc::clone(&checked_count);
-        let found_packages = Arc::clone(&found_packages);
-
-        let handle = thread::spawn(move || {
-            for (dep_name, dep_info) in chunk {
-                if let Ok(Some(latest_version)) = get_latest_version(&dep_name, verbose) {
-                    let current_version = extract_version_from_spec(&dep_info.version_spec);
-
-                    if current_version != latest_version
-                        && !is_version_satisfied(&current_version, &latest_version)
-                    {
-                        // 记录发现的过期包（用于去重显示）
-                        let mut found_set = found_packages.lock().unwrap();
-                        let is_new_package = found_set.insert(dep_name.clone());
-                        drop(found_set);
-
-                        // 实时显示新发现的过期依赖
-                        if is_new_package {
-                            print_outdated_package_realtime(
-                                &dep_name,
-                                &current_version,
-                                &latest_version,
-                                verbose,
-                            );
-                        }
-
-                        // 为每个使用该依赖的包创建过期依赖记录
-                        for (package_name, dep_type) in &dep_info.used_by {
-                            let outdated = OutdatedDependency {
-                                name: dep_name.clone(),
-                                current: current_version.clone(),
-                                latest: latest_version.clone(),
-                                package: package_name.clone(),
-                                dep_type: dep_type.clone(),
-                            };
-
-                            outdated_deps.lock().unwrap().push(outdated);
-                        }
-                    }
-                }
-
-                // 更新已检查计数
-                let mut count = checked_count.lock().unwrap();
-                *count += 1;
-            }
-        });
-
-        handles.push(handle);
-    }
-
-    // 等待所有线程完成
-    for handle in handles {
-        let _ = handle.join();
-    }
-
-    // 停止显示线程和 spinner
-    if let Some((spinner_arc, display_handle)) = display_spinner {
-        let _ = display_handle.join();
-        if let Ok(mut spinner) = spinner_arc.lock() {
-            spinner.stop();
-        }
-    }
-
-    let outdated_deps = outdated_deps.lock().unwrap().clone();
-    let unique_outdated_count = found_packages.lock().unwrap().len();
-
-    if outdated_deps.is_empty() {
+    if result.is_empty() {
         Logger::success(t!("check.outdated.none_found"));
         return Ok(false);
     }
 
+    let unique_outdated_count = result
+        .iter()
+        .map(|dep| &dep.name)
+        .collect::<std::collections::HashSet<_>>()
+        .len();
+
     // 发现过期依赖 - 显示去重后的包数量和总依赖实例数量
-    if unique_outdated_count == outdated_deps.len() {
-        // 如果去重数量等于总数量，只显示一个数字
+    if unique_outdated_count == result.len() {
         Logger::error(tf!("check.outdated.found", unique_outdated_count));
     } else {
-        // 如果不同，显示两个数字：去重包数量和总依赖实例数量
         Logger::error(tf!(
             "check.outdated.found_with_instances",
             unique_outdated_count,
-            outdated_deps.len()
+            result.len()
         ));
     }
 
     match args.format.as_str() {
         "json" => {
             let json_output = serde_json::json!({
-                "outdated_dependencies": outdated_deps,
-                "count": outdated_deps.len(),
+                "outdated_dependencies": result,
+                "count": result.len(),
                 "unique_count": unique_outdated_count
             });
             println!("{}", serde_json::to_string_pretty(&json_output)?);
         }
         "table" | _ => {
-            print_outdated_dependencies_table(&outdated_deps, args.detail)?;
+            print_outdated_dependencies_table(&result, args.detail)?;
         }
     }
 
     Ok(true)
+}
+
+/// 使用 scheduler 检查过期依赖
+async fn check_outdated_with_scheduler(
+    unique_dependencies: std::collections::BTreeMap<String, DependencyInfo>,
+    verbose: bool,
+) -> Result<Vec<OutdatedDependency>> {
+    let total_deps = unique_dependencies.len();
+    Logger::info(tf!("scheduler.dependency_check_start", total_deps));
+
+    // 共享结果收集器
+    let outdated_deps = Arc::new(Mutex::new(Vec::new()));
+    let found_packages = Arc::new(Mutex::new(std::collections::HashSet::<String>::new()));
+
+    // 创建进度显示（自动转动 + 消息更新）
+    let mut spinner = if !verbose {
+        Some(Spinner::new(tf!("check.outdated.progress", 0, total_deps)))
+    } else {
+        None
+    };
+
+    if let Some(ref mut s) = spinner {
+        s.start();
+    }
+
+    let spinner_clone = if !verbose {
+        Some(Arc::new(Mutex::new(spinner.take().unwrap())))
+    } else {
+        None
+    };
+
+    let progress_callback = {
+        let spinner_ref = spinner_clone.clone();
+
+        Arc::new(move |completed: usize, total: usize| {
+            if verbose {
+                Logger::info(tf!("check.outdated.progress", completed, total));
+            } else if let Some(ref spinner) = spinner_ref {
+                if let Ok(s) = spinner.lock() {
+                    // 只更新消息内容，让 Spinner 继续自己的转动循环
+                    s.update_message(tf!("check.outdated.progress", completed, total));
+                }
+            }
+        })
+    };
+
+    // 任务完成回调
+    let task_completed_callback = {
+        Arc::new(move |task_id: &str, result: &TaskResult<()>| {
+            if let TaskResult::Failed(err) = result {
+                if verbose {
+                    Logger::warn(tf!("check.outdated.npm_error", task_id, err));
+                }
+            }
+        })
+    };
+
+    // 创建调度器配置
+    let config = SchedulerConfig {
+        max_concurrency: calculate_optimal_thread_count(total_deps),
+        timeout: Some(std::time::Duration::from_secs(30)), // 30秒超时
+        fail_fast: false,
+        verbose,
+        progress_callback: Some(progress_callback),
+        task_completed_callback: Some(task_completed_callback),
+    };
+
+    let scheduler = AsyncTaskScheduler::new(config);
+
+    // 准备异步任务
+    let tasks: Vec<(String, _)> = unique_dependencies
+        .into_iter()
+        .map(|(dep_name, dep_info)| {
+            let outdated_deps = Arc::clone(&outdated_deps);
+            let found_packages = Arc::clone(&found_packages);
+            let task_name = dep_name.clone();
+
+            let task_future = async move {
+                match get_latest_version_async(&dep_name).await {
+                    Ok(Some(latest_version)) => {
+                        let current_version = extract_version_from_spec(&dep_info.version_spec);
+
+                        if current_version != latest_version
+                            && !is_version_satisfied(&current_version, &latest_version)
+                        {
+                            // 记录发现的过期包（用于去重显示）
+                            let mut found_set = found_packages.lock().unwrap();
+                            let is_new_package = found_set.insert(dep_name.clone());
+                            drop(found_set);
+
+                            // 实时显示新发现的过期依赖
+                            if is_new_package && verbose {
+                                print_outdated_package_realtime(
+                                    &dep_name,
+                                    &current_version,
+                                    &latest_version,
+                                    verbose,
+                                );
+                            }
+
+                            // 为每个使用该依赖的包创建过期依赖记录
+                            for (package_name, dep_type) in &dep_info.used_by {
+                                let outdated = OutdatedDependency {
+                                    name: dep_name.clone(),
+                                    current: current_version.clone(),
+                                    latest: latest_version.clone(),
+                                    package: package_name.clone(),
+                                    dep_type: dep_type.clone(),
+                                };
+
+                                outdated_deps.lock().unwrap().push(outdated);
+                            }
+                        }
+                        Ok(())
+                    }
+                    Ok(None) => {
+                        // 无法获取版本信息，跳过
+                        Ok(())
+                    }
+                    Err(e) => {
+                        // 返回错误但不中断整个流程
+                        Err(e)
+                    }
+                }
+            };
+
+            (task_name, task_future)
+        })
+        .collect();
+
+    // 执行批量任务
+    let _results = scheduler.execute_batch(tasks).await;
+
+    // 停止 spinner
+    if let Some(spinner_arc) = spinner_clone {
+        if let Ok(mut s) = spinner_arc.lock() {
+            s.stop();
+        }
+    }
+
+    Logger::info(t!("scheduler.dependency_check_complete"));
+
+    // 返回结果
+    let final_results = outdated_deps.lock().unwrap().clone();
+    Ok(final_results)
 }
 
 /// 收集所有未被忽略的 package.json 文件
@@ -448,9 +469,6 @@ fn collect_package_files(
     workspace_root: &std::path::Path,
     verbose: bool,
 ) -> Result<Vec<std::path::PathBuf>> {
-    use crate::models::config::Config;
-    use std::fs;
-
     let mut package_files = Vec::new();
 
     fn scan_directory(
@@ -502,9 +520,6 @@ fn collect_unique_dependencies(
     package_files: &[std::path::PathBuf],
     verbose: bool,
 ) -> Result<std::collections::BTreeMap<String, DependencyInfo>> {
-    use std::collections::BTreeMap;
-    use std::fs;
-
     let mut unique_dependencies: BTreeMap<String, DependencyInfo> = BTreeMap::new();
 
     for package_file in package_files {
@@ -564,68 +579,6 @@ fn collect_unique_dependencies(
     Ok(unique_dependencies)
 }
 
-/// 检查单个依赖的版本
-fn check_dependency_version(
-    dep_name: &str,
-    version_spec: &str,
-    package_name: &str,
-    dep_type: &str,
-    checked_packages: &mut HashMap<String, String>,
-    verbose: bool,
-) -> Result<Option<OutdatedDependency>> {
-    // 跳过工作区依赖
-    if version_spec.starts_with("workspace:") {
-        return Ok(None);
-    }
-
-    // 跳过文件路径依赖
-    if version_spec.starts_with("file:") || version_spec.starts_with("link:") {
-        return Ok(None);
-    }
-
-    // 跳过 git 依赖
-    if version_spec.contains("git+") || version_spec.contains("github:") {
-        return Ok(None);
-    }
-
-    // 如果已经检查过这个包，直接使用缓存结果
-    if let Some(latest_version) = checked_packages.get(dep_name) {
-        let current_version = extract_version_from_spec(version_spec);
-        if current_version != *latest_version
-            && !is_version_satisfied(&current_version, latest_version)
-        {
-            return Ok(Some(OutdatedDependency {
-                name: dep_name.to_string(),
-                current: current_version,
-                latest: latest_version.clone(),
-                package: package_name.to_string(),
-                dep_type: dep_type.to_string(),
-            }));
-        }
-        return Ok(None);
-    }
-
-    // 获取最新版本
-    if let Some(latest_version) = get_latest_version(dep_name, verbose)? {
-        checked_packages.insert(dep_name.to_string(), latest_version.clone());
-
-        let current_version = extract_version_from_spec(version_spec);
-        if current_version != latest_version
-            && !is_version_satisfied(&current_version, &latest_version)
-        {
-            return Ok(Some(OutdatedDependency {
-                name: dep_name.to_string(),
-                current: current_version,
-                latest: latest_version,
-                package: package_name.to_string(),
-                dep_type: dep_type.to_string(),
-            }));
-        }
-    }
-
-    Ok(None)
-}
-
 /// 检查是否应该跳过依赖检查
 fn should_skip_dependency(version_spec: &str) -> bool {
     // 跳过工作区依赖
@@ -644,58 +597,6 @@ fn should_skip_dependency(version_spec: &str) -> bool {
     }
 
     false
-}
-
-/// 多线程安全的依赖版本检查
-fn check_dependency_version_concurrent(
-    dep_name: &str,
-    version_spec: &str,
-    package_name: &str,
-    dep_type: &str,
-    checked_packages: &Arc<Mutex<HashMap<String, String>>>,
-    verbose: bool,
-) -> Result<Option<OutdatedDependency>> {
-    // 如果已经检查过这个包，直接使用缓存结果
-    if let Ok(cache) = checked_packages.lock() {
-        if let Some(latest_version) = cache.get(dep_name) {
-            let current_version = extract_version_from_spec(version_spec);
-            if current_version != *latest_version
-                && !is_version_satisfied(&current_version, latest_version)
-            {
-                return Ok(Some(OutdatedDependency {
-                    name: dep_name.to_string(),
-                    current: current_version,
-                    latest: latest_version.clone(),
-                    package: package_name.to_string(),
-                    dep_type: dep_type.to_string(),
-                }));
-            }
-            return Ok(None);
-        }
-    }
-
-    // 获取最新版本
-    if let Some(latest_version) = get_latest_version(dep_name, verbose)? {
-        // 更新缓存
-        if let Ok(mut cache) = checked_packages.lock() {
-            cache.insert(dep_name.to_string(), latest_version.clone());
-        }
-
-        let current_version = extract_version_from_spec(version_spec);
-        if current_version != latest_version
-            && !is_version_satisfied(&current_version, &latest_version)
-        {
-            return Ok(Some(OutdatedDependency {
-                name: dep_name.to_string(),
-                current: current_version,
-                latest: latest_version,
-                package: package_name.to_string(),
-                dep_type: dep_type.to_string(),
-            }));
-        }
-    }
-
-    Ok(None)
 }
 
 /// 从版本规范中提取版本号
@@ -761,10 +662,45 @@ fn get_latest_version(package_name: &str, verbose: bool) -> Result<Option<String
     Ok(None)
 }
 
+/// 异步版本的获取最新版本函数
+async fn get_latest_version_async(package_name: &str) -> Result<Option<String>> {
+    use tokio::process::Command;
+
+    let output = match Command::new("npm")
+        .args(&["view", package_name, "version", "--json"])
+        .output()
+        .await
+    {
+        Ok(output) => output,
+        Err(_) => {
+            return Ok(None);
+        }
+    };
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    // 解析 JSON 响应
+    match serde_json::from_str::<NpmViewResponse>(trimmed) {
+        Ok(response) => Ok(Some(response.version)),
+        Err(_) => {
+            // 如果不是 JSON 格式，尝试直接使用字符串（去掉引号）
+            let version = trimmed.trim_matches('"');
+            Ok(Some(version.to_string()))
+        }
+    }
+}
+
 /// 打印循环依赖表格
 fn print_circular_dependencies_table(circular_dependencies: &[Vec<String>], detail: bool) {
-    use crate::utils::constants::icons;
-
     Logger::info("");
     Logger::info(t!("check.circular.details"));
     Logger::info("───────────────────────────────────────");
@@ -832,9 +768,6 @@ fn print_outdated_dependencies_table(
     outdated_deps: &[OutdatedDependency],
     detail: bool,
 ) -> Result<()> {
-    use crate::utils::colors::Colors;
-    use std::collections::BTreeMap;
-
     Logger::info("");
     Logger::info(t!("check.outdated.details"));
     Logger::info("───────────────────────────────────────");
@@ -915,9 +848,6 @@ pub fn collect_version_conflicts(
     package_files: &[std::path::PathBuf],
     verbose: bool,
 ) -> Result<Vec<VersionConflict>> {
-    use std::collections::{BTreeMap, HashMap};
-    use std::fs;
-
     // 按依赖名称分组收集所有使用情况
     let mut dependency_usages: BTreeMap<String, Vec<ConflictUsage>> = BTreeMap::new();
 
@@ -1027,8 +957,6 @@ fn calculate_recommended_version(usages: &[ConflictUsage]) -> String {
 
 /// 打印版本冲突表格
 fn print_version_conflicts_table(conflicts: &[VersionConflict], detail: bool) -> Result<()> {
-    use crate::utils::colors::Colors;
-
     Logger::info("");
     Logger::info(t!("check.versions.details"));
     Logger::info("───────────────────────────────────────");
@@ -1053,7 +981,6 @@ fn print_version_conflicts_table(conflicts: &[VersionConflict], detail: bool) ->
             }
         } else {
             // 简单模式：按版本分组显示
-            use std::collections::HashMap;
             let mut version_groups: HashMap<String, Vec<&ConflictUsage>> = HashMap::new();
 
             for usage in &conflict.conflicts {

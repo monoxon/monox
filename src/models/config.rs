@@ -193,19 +193,7 @@ pub trait ConfigDefaults {
 
     /// 获取默认忽略模式
     fn default_ignore_patterns() -> Vec<String> {
-        vec![
-            ".git".to_string(),
-            "node_modules".to_string(),
-            "target".to_string(),
-            "dist".to_string(),
-            "build".to_string(),
-            ".next".to_string(),
-            ".nuxt".to_string(),
-            "coverage".to_string(),
-            "*.log".to_string(),
-            "tmp".to_string(),
-            "temp".to_string(),
-        ]
+        vec![".git".to_string(), "dist".to_string(), "*.log".to_string()]
     }
 
     /// 获取默认最大并发数

@@ -17,28 +17,49 @@
 // ============================================================================
 
 use super::colors::Colors;
+use super::constants::APP_NAME;
 
 /// 简单的日志工具
 pub struct Logger;
 
 impl Logger {
     pub fn debug<S: AsRef<str>>(msg: S) {
-        println!("{} {}", Colors::debug("[MONOX:DEBUG]"), msg.as_ref());
+        println!(
+            "{} {}",
+            Colors::debug(&format!("[{}:DEBUG]", APP_NAME)),
+            msg.as_ref()
+        );
     }
 
     pub fn info<S: AsRef<str>>(msg: S) {
-        println!("{} {}", Colors::info("[MONOX:INFO]"), msg.as_ref());
+        println!(
+            "{} {}",
+            Colors::info(&format!("[{}]", APP_NAME)),
+            msg.as_ref()
+        );
     }
 
     pub fn warn<S: AsRef<str>>(msg: S) {
-        println!("{} {}", Colors::warn("[MONOX:WARN]"), msg.as_ref());
+        println!(
+            "{} {}",
+            Colors::warn(&format!("[{}]", APP_NAME)),
+            msg.as_ref()
+        );
     }
 
     pub fn error<S: AsRef<str>>(msg: S) {
-        eprintln!("{} {}", Colors::error("[MONOX:ERROR]"), msg.as_ref());
+        eprintln!(
+            "{} {}",
+            Colors::error(&format!("[{}]", APP_NAME)),
+            msg.as_ref()
+        );
     }
 
     pub fn success<S: AsRef<str>>(msg: S) {
-        println!("{} {}", Colors::success("[MONOX:SUCCESS]"), msg.as_ref());
+        println!(
+            "{} {}",
+            Colors::success(&format!("[{}]", APP_NAME)),
+            msg.as_ref()
+        );
     }
 }

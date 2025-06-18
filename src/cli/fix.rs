@@ -25,6 +25,7 @@ use std::path::Path;
 
 use crate::cli::check::{collect_version_conflicts, VersionConflict};
 use crate::models::config::Config;
+use crate::utils::colors::Colors;
 use crate::utils::logger::Logger;
 use crate::{t, tf};
 
@@ -127,8 +128,6 @@ pub fn handle_fix(args: FixArgs) -> Result<()> {
 
 /// 收集 package.json 文件
 fn collect_package_files(workspace_root: &Path, verbose: bool) -> Result<Vec<std::path::PathBuf>> {
-    use crate::models::config::Config;
-
     let mut package_files = Vec::new();
 
     fn scan_directory(
@@ -258,8 +257,6 @@ fn display_fix_plan(fixes: &[FixResult], args: &FixArgs) -> Result<()> {
 
 /// 打印修复方案表格
 fn print_fix_plan_table(fixes: &[FixResult], detail: bool) -> Result<()> {
-    use crate::utils::colors::Colors;
-
     Logger::info("");
     Logger::info(t!("fix.plan_details"));
     Logger::info("───────────────────────────────────────");
@@ -437,8 +434,6 @@ fn display_fix_results(results: &[FixResult], args: &FixArgs) -> Result<()> {
 
 /// 打印修复结果表格
 fn print_fix_results_table(results: &[FixResult]) -> Result<()> {
-    use crate::utils::colors::Colors;
-
     Logger::info("");
     Logger::info(t!("fix.results_details"));
     Logger::info("───────────────────────────────────────");
