@@ -8,7 +8,19 @@
     "dependency-analysis",
     "rust",
     "cli",
-    "package-manager"
+    "package-manager",
+    "workspace",
+    "lerna",
+    "nx",
+    "turborepo",
+    "concurrent",
+    "parallel",
+    "build-system",
+    "javascript",
+    "typescript",
+    "frontend",
+    "automation",
+    "ci-cd"
   ],
   "homepage": "https://github.com/your-org/monox",
   "bugs": {
