@@ -22,10 +22,17 @@ MonoX 是一个专为 monorepo 项目设计的智能构建工具，通过依赖�
 ### 安装
 
 ```bash
+# 从 npm 安装（推荐）
+npm install -g monox
+# 或者
+pnpm add -g monox
+# 或者
+yarn global add monox
+
 # 从源码构建（需要 Rust 环境）
 git clone https://github.com/your-org/monox.git
 cd monox
-cargo make build
+cargo build --release
 
 # 将可执行文件添加到 PATH
 cp target/release/monox /usr/local/bin/

@@ -22,10 +22,17 @@ MonoX is an intelligent build tool designed specifically for monorepo projects, 
 ### Installation
 
 ```bash
+# Install from npm (recommended)
+npm install -g monox
+# or
+pnpm add -g monox
+# or
+yarn global add monox
+
 # Build from source (requires Rust environment)
 git clone https://github.com/your-org/monox.git
 cd monox
-cargo make build
+cargo build --release
 
 # Add executable to PATH
 cp target/release/monox /usr/local/bin/
