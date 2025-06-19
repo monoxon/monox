@@ -53,6 +53,31 @@ pub mod log_colors {
 pub struct Colors;
 
 impl Colors {
+    /// 蓝色
+    pub fn blue(text: &str) -> String {
+        Self::colorize(text, ansi::BLUE)
+    }
+
+    /// 青色
+    pub fn cyan(text: &str) -> String {
+        Self::colorize(text, ansi::CYAN)
+    }
+
+    /// 绿色
+    pub fn green(text: &str) -> String {
+        Self::colorize(text, ansi::GREEN)
+    }
+
+    /// 黄色
+    pub fn yellow(text: &str) -> String {
+        Self::colorize(text, ansi::YELLOW)
+    }
+
+    /// 红色
+    pub fn red(text: &str) -> String {
+        Self::colorize(text, ansi::RED)
+    }
+
     /// 为文本添加颜色
     pub fn colorize(text: &str, color: &str) -> String {
         format!("{}{}{}", color, text, ansi::RESET)

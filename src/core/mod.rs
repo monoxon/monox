@@ -17,6 +17,7 @@
 
 pub mod analyzer;
 pub mod cache;
+pub mod checker;
 pub mod executor;
 pub mod scheduler;
 

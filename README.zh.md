@@ -112,6 +112,37 @@ monox fix
 monox fix --dry-run
 ```
 
+#### update - 依赖更新
+
+```bash
+# 更新所有包的依赖版本（仅更新 package.json）
+monox update --all
+
+# 更新指定包的依赖版本
+monox update --package @your-org/package-name
+
+# 仅执行安全更新
+monox update --all --security
+
+# 预演模式，显示待更新内容
+monox update --all --dry-run
+
+# 更新到最新版本（忽略 semver 约束）
+monox update --all --latest
+
+# 包含开发依赖和对等依赖
+monox update --all --dev --peer
+
+# 跳过确认提示
+monox update --all --yes
+
+# JSON 格式输出
+monox update --all --format json
+
+# 注意: update 命令仅更新 package.json 中的版本号
+# 需要手动运行包管理器安装命令来下载依赖
+```
+
 ## 📋 命令参考
 
 ### 全局选项
@@ -169,6 +200,36 @@ monox check --circular --detail  # 显示详细循环路径
 ```bash
 monox fix --versions             # 修复版本不一致
 monox fix --dry-run             # 预演模式，不实际修改
+```
+
+#### `update` - 依赖更新
+
+```bash
+# 更新所有包的依赖版本号（仅更新 package.json）
+monox update --all
+
+# 更新指定包的依赖版本号
+monox update --package @your-org/package-name
+
+# 仅执行安全更新
+monox update --all --security
+
+# 预演模式，显示待更新内容
+monox update --all --dry-run
+
+# 更新到最新版本（忽略 semver 约束）
+monox update --all --latest
+
+# 包含开发依赖和对等依赖
+monox update --all --dev --peer
+
+# 跳过确认提示
+monox update --all --yes
+
+# JSON 格式输出
+monox update --all --format json
+
+# 注意: 仅更新 package.json 版本号，需手动安装依赖
 ```
 
 #### `init` - 初始化

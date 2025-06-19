@@ -30,6 +30,7 @@ impl Logger {
             "INFO" => Colors::info(&format!("[{}]", APP_NAME)),
             "WARN" => Colors::warn(&format!("[{}]", APP_NAME)),
             "ERROR" => Colors::error(&format!("[{}]", APP_NAME)),
+            "SUCCESS" => Colors::success(&format!("[{}]", APP_NAME)),
             _ => format!("[{}]", APP_NAME),
         }
     }

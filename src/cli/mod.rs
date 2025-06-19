@@ -21,6 +21,7 @@ pub mod exec;
 pub mod fix;
 pub mod init;
 pub mod run;
+pub mod update;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -32,6 +33,7 @@ use exec::{exec, ExecArgs};
 use fix::{handle_fix, FixArgs};
 use init::{handle_init, InitArgs};
 use run::{run, RunArgs};
+use update::{handle_update, UpdateArgs};
 
 /// MonoX - Lightweight monorepo build tool
 #[derive(Debug, Parser)]
@@ -94,6 +96,8 @@ pub enum Commands {
     Init(InitArgs),
     /// Run scripts
     Run(RunArgs),
+    /// Update dependencies to latest versions
+    Update(UpdateArgs),
 }
 
 pub async fn run_cli() -> Result<()> {
@@ -111,6 +115,7 @@ pub async fn run_cli() -> Result<()> {
         Commands::Fix(args) => handle_fix(args),
         Commands::Init(args) => handle_init(args),
         Commands::Run(args) => run(args).await,
+        Commands::Update(args) => handle_update(args).await,
     }
 }
 

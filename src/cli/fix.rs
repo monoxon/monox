@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use crate::cli::check::{collect_version_conflicts, VersionConflict};
+use crate::core::checker::{HealthChecker, VersionConflict};
 use crate::models::config::Config;
 use crate::utils::colors::Colors;
 use crate::utils::logger::Logger;
@@ -75,6 +75,9 @@ pub fn handle_fix(args: FixArgs) -> Result<()> {
         anyhow::bail!(tf!("error.workspace_not_exist", workspace_root.display()));
     }
 
+    // 创建健康检查器
+    let checker = HealthChecker::new(workspace_root.clone()).with_verbose(verbose);
+
     // 收集所有未被忽略的 package.json 文件
     let package_files = collect_package_files(&workspace_root, verbose)?;
 
@@ -84,7 +87,7 @@ pub fn handle_fix(args: FixArgs) -> Result<()> {
     }
 
     // 收集版本冲突
-    let version_conflicts = collect_version_conflicts(&package_files, verbose)?;
+    let version_conflicts = checker.check_version_conflicts()?;
 
     if version_conflicts.is_empty() {
         Logger::success(t!("fix.no_conflicts_found"));
