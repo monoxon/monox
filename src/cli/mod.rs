@@ -33,75 +33,75 @@ use fix::{handle_fix, FixArgs};
 use init::{handle_init, InitArgs};
 use run::{run, RunArgs};
 
-/// MonoX - 轻量级 monorepo 构建工具
+/// MonoX - Lightweight monorepo build tool
 #[derive(Debug, Parser)]
 #[command(name = "monox")]
 #[command(about = "Lightweight monorepo build tool based on Rust")]
-#[command(version)]
+#[command(version = env!("PACKAGE_VERSION"))]
 pub struct Cli {
-    /// 全局详细模式
+    /// Global verbose mode
     #[arg(short, long, global = true)]
     pub verbose: bool,
 
-    /// 界面语言 (zh_cn, en_us)
+    /// Interface language (zh_cn, en_us)
     #[arg(short, long, global = true)]
     pub language: Option<String>,
 
-    /// 工作区根目录
+    /// Workspace root directory
     #[arg(short = 'C', long, global = true)]
     pub workspace_root: Option<String>,
 
-    /// 最大并发数
+    /// Maximum concurrency
     #[arg(short = 'j', long, global = true)]
     pub max_concurrency: Option<usize>,
 
-    /// 任务超时时间（秒）
+    /// Task timeout (seconds)
     #[arg(long, global = true)]
     pub timeout: Option<u32>,
 
-    /// 重试次数
+    /// Retry count
     #[arg(long, global = true)]
     pub retry: Option<u32>,
 
-    /// 失败时继续执行
+    /// Continue on failure
     #[arg(long, global = true)]
     pub continue_on_failure: bool,
 
-    /// 禁用彩色输出
+    /// Disable colored output
     #[arg(long, global = true)]
     pub no_color: bool,
 
-    /// 禁用进度条
+    /// Disable progress bar
     #[arg(long, global = true)]
     pub no_progress: bool,
 
-    /// 命令
+    /// Commands
     #[command(subcommand)]
     pub command: Commands,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// 分析工作区依赖关系
+    /// Analyze workspace dependency relationships
     Analyze(AnalyzeArgs),
-    /// 检查工作区健康状态
+    /// Check workspace health status
     Check(CheckArgs),
-    /// 执行预定义任务
+    /// Execute predefined tasks
     Exec(ExecArgs),
-    /// 自动修复版本冲突
+    /// Auto-fix version conflicts
     Fix(FixArgs),
-    /// 初始化配置文件
+    /// Initialize configuration file
     Init(InitArgs),
-    /// 运行脚本
+    /// Run scripts
     Run(RunArgs),
 }
 
 pub async fn run_cli() -> Result<()> {
     let cli = Cli::parse();
 
-    // 构建运行时参数来覆盖配置
+    // Build runtime args to override config
     let runtime_args = build_runtime_args(&cli);
-    // 合并运行时参数到全局配置
+    // Merge runtime args to global config
     Config::merge_runtime_args(runtime_args)?;
 
     match cli.command {
@@ -114,7 +114,7 @@ pub async fn run_cli() -> Result<()> {
     }
 }
 
-/// 从 CLI 参数构建运行时参数
+/// Build runtime args from CLI arguments
 fn build_runtime_args(cli: &Cli) -> crate::models::config::RuntimeArgs {
     RuntimeArgs {
         verbose: if cli.verbose { Some(true) } else { None },
