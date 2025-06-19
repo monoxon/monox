@@ -50,8 +50,8 @@ pnpm run release
 
 这会：
 - 构建 release 版本
-- 发布到 npm
-- 创建 Git 标签
+- 发布到 npm（不创建 changeset 的标签）
+- 创建简洁的 Git 标签（格式：`v1.0.0`）
 - 推送标签到远程仓库
 
 或者分步执行：
@@ -60,8 +60,8 @@ pnpm run release
 # 1. 构建
 pnpm run build
 
-# 2. 发布
-pnpx changeset publish
+# 2. 发布（不创建标签）
+changeset publish --no-git-tag
 
 # 3. 打标签并推送
 pnpm run tag
@@ -91,4 +91,10 @@ pnpm run release
 发布配置在以下文件中：
 - `package.json` - npm 包配置
 - `.changeset/config.json` - changeset 配置
-- `scripts/release.sh` - 发布前检查脚本 
+- `scripts/release.sh` - 发布前检查脚本
+
+### 标签格式说明
+
+为了避免 changeset 自动添加包名前缀（如 `monox@1.0.0`），我们：
+1. 使用 `--no-git-tag` 参数阻止 changeset 创建标签
+2. 通过自定义脚本创建简洁的标签格式：`v1.0.0` 

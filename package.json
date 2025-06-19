@@ -49,8 +49,8 @@
     "format:check": "cargo fmt --check",
     "changeset": "changeset",
     "version": "changeset version && git add . && git commit -m \"chore: version packages\"",
-    "release": "pnpm run build && changeset publish && pnpm run tag",
-    "tag": "git tag v$(node -p \"require('./package.json').version\") && git push --follow-tags",
+    "release": "pnpm run build && changeset publish --no-git-tag && pnpm run tag",
+    "tag": "git tag v$(node -p 'require(\"./package.json\").version') && git push --follow-tags",
     "prepare-release": "./scripts/release.sh",
     "dev": "cargo run --",
     "check": "cargo check"
