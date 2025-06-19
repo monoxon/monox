@@ -64,7 +64,11 @@ pub struct TaskConfig {
     /// 任务名称
     pub name: String,
     /// 包名（"*" 表示所有包）
+    #[serde(default)]
     pub pkg_name: String,
+    /// 多包名称列表（可选，如果指定则优先使用此字段）
+    #[serde(default)]
+    pub packages: Option<Vec<String>>,
     /// 任务描述
     #[serde(default)]
     pub desc: Option<String>,
@@ -320,18 +324,21 @@ impl Config {
             TaskConfig {
                 name: "build".to_string(),
                 pkg_name: "*".to_string(),
+                packages: None,
                 desc: Some("构建所有包".to_string()),
                 command: "npm run build".to_string(),
             },
             TaskConfig {
                 name: "test".to_string(),
                 pkg_name: "*".to_string(),
+                packages: None,
                 desc: Some("运行测试".to_string()),
                 command: "npm run test".to_string(),
             },
             TaskConfig {
                 name: "lint".to_string(),
                 pkg_name: "*".to_string(),
+                packages: None,
                 desc: Some("代码检查".to_string()),
                 command: "npm run lint".to_string(),
             },

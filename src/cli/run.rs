@@ -30,6 +30,10 @@ pub struct RunArgs {
     #[arg(short = 'p', long)]
     pub package: Option<String>,
 
+    /// 多个目标包名列表，逗号分隔 (如: pkg1,pkg2,pkg3) - no must
+    #[arg(long, value_delimiter = ',')]
+    pub packages: Option<Vec<String>>,
+
     /// 是否运行所有包 - no must
     #[arg(short = 'a', long)]
     pub all: bool,
@@ -39,13 +43,22 @@ pub async fn run(args: RunArgs) -> Result<()> {
     Logger::info(tf!("run.start", &args.command));
 
     let executor = TaskExecutor::new_from_config()?;
-    match (args.all, args.package) {
-        (true, _) => executor.execute("*", &args.command, Some(true)).await,
-        (false, Some(package_name)) => {
+    match (args.all, args.package, args.packages) {
+        // 优先级：all > packages > package
+        (true, _, _) => executor.execute("*", &args.command, Some(true)).await,
+        (false, _, Some(package_names)) => {
+            if package_names.is_empty() {
+                anyhow::bail!(t!("run.empty_packages_list"));
+            }
+            executor
+                .execute_packages(&package_names, &args.command)
+                .await
+        }
+        (false, Some(package_name), None) => {
             executor
                 .execute(&package_name, &args.command, Some(false))
                 .await
         }
-        (false, None) => anyhow::bail!(t!("run.missing_package_or_all")),
+        (false, None, None) => anyhow::bail!(t!("run.missing_package_or_all")),
     }
 }

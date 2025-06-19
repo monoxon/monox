@@ -33,6 +33,26 @@ pkg_name = "*"
 desc = "代码检查"
 command = "npm run lint"
 
+[[tasks]]
+name = "build-frontend"
+desc = "构建前端相关包"
+command = "npm run build"
+packages = ["web-ui", "mobile-app", "shared-components"]
+
+[[tasks]]
+name = "test-packages"
+desc = "测试指定的包"
+command = "build"
+packages = ["@test/pkg1", "@test/pkg2"]
+
+[[tasks]]
+name = "build:editor"
+desc = "构建编辑器相关包（无 pkg_name 字段测试）"
+command = "build"
+packages = ["@test/pkg1"]
+
+
+
 [execution]
 max_concurrency = 10
 task_timeout = 300

@@ -504,4 +504,121 @@ impl DependencyAnalyzer {
             }
         }
     }
+
+    /// 分析多个包的依赖关系（包括其依赖和被依赖的包）
+    pub fn analyze_packages(
+        &mut self,
+        package_names: &[String],
+    ) -> Result<DependencyAnalysisResult> {
+        let start_time = Instant::now();
+
+        if self.verbose {
+            Logger::info(tf!(
+                "analyze.multi_packages_start",
+                package_names.join(", ")
+            ));
+        }
+
+        // 1. 执行完整的工作区分析以获得正确的依赖关系
+        let full_result = self.analyze_workspace()?;
+
+        // 2. 查找所有目标包
+        let mut target_packages = Vec::new();
+        for package_name in package_names {
+            let target_package = full_result
+                .packages
+                .iter()
+                .find(|p| p.name == *package_name)
+                .ok_or_else(|| anyhow::anyhow!(tf!("error.package_not_found", package_name)))?
+                .clone();
+            target_packages.push(target_package);
+        }
+
+        if self.verbose {
+            for pkg in &target_packages {
+                Logger::info(tf!(
+                    "analyze.multi_package_found",
+                    &pkg.name,
+                    pkg.folder.display()
+                ));
+            }
+        }
+
+        // 3. 收集所有相关包（去重）
+        let mut related_packages = Vec::new();
+        let mut package_names_set = HashSet::new();
+
+        for target_package in &target_packages {
+            // 获取该包的相关包
+            let pkg_related = self.get_related_packages(target_package, &full_result.packages);
+
+            // 去重添加到结果集中
+            for pkg in pkg_related {
+                if !package_names_set.contains(&pkg.name) {
+                    package_names_set.insert(pkg.name.clone());
+                    related_packages.push(pkg);
+                }
+            }
+        }
+
+        // 4. 添加目标包本身（确保都包含在内）
+        for target_package in &target_packages {
+            if !package_names_set.contains(&target_package.name) {
+                package_names_set.insert(target_package.name.clone());
+                related_packages.push(target_package.clone());
+            }
+        }
+
+        // 5. 重新计算相关包的构建阶段
+        let stages = if full_result.circular_dependencies.is_empty() {
+            self.calculate_build_stages(&related_packages)
+        } else {
+            // 检查循环依赖是否涉及任何目标包
+            let targets_in_cycle = target_packages.iter().any(|target| {
+                full_result
+                    .circular_dependencies
+                    .iter()
+                    .any(|cycle| cycle.contains(&target.name))
+            });
+
+            if targets_in_cycle {
+                if self.verbose {
+                    Logger::info(t!("analyze.circular_detected"));
+                }
+                Vec::new()
+            } else {
+                self.calculate_build_stages(&related_packages)
+            }
+        };
+
+        let analysis_duration = start_time.elapsed().as_millis() as u64;
+
+        // 6. 生成统计信息
+        let statistics = AnalysisStatistics {
+            total_packages: target_packages.len(), // 多包分析统计目标包数量
+            total_stages: stages.len(),
+            packages_with_workspace_deps: target_packages
+                .iter()
+                .filter(|p| p.has_workspace_dependencies())
+                .count(),
+            circular_dependency_count: full_result.circular_dependencies.len(),
+            analysis_duration_ms: analysis_duration,
+        };
+
+        if self.verbose {
+            Logger::info(tf!(
+                "analyze.multi_packages_completed",
+                package_names.join(", "),
+                analysis_duration
+            ));
+        }
+
+        // 7. 返回结果（只包含目标包，但保留完整的依赖上下文）
+        Ok(DependencyAnalysisResult {
+            packages: target_packages,
+            stages,
+            circular_dependencies: full_result.circular_dependencies,
+            statistics,
+        })
+    }
 }

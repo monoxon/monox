@@ -40,6 +40,10 @@ pub struct AnalyzeArgs {
     /// 分析指定的单个包
     #[arg(short = 'p', long)]
     pub package: Option<String>,
+
+    /// 分析指定的多个包（逗号分隔）
+    #[arg(long, value_delimiter = ',')]
+    pub packages: Option<Vec<String>>,
 }
 
 pub fn handle_analyze(args: AnalyzeArgs) -> Result<()> {
@@ -58,7 +62,25 @@ pub fn handle_analyze(args: AnalyzeArgs) -> Result<()> {
     // 创建分析器并执行分析
     let mut analyzer = DependencyAnalyzer::new(workspace_root).with_verbose(verbose);
 
-    let result = if let Some(package_name) = args.package {
+    let result = if let Some(packages) = args.packages {
+        // 多包分析
+        // 过滤掉空字符串和只有空白字符的字符串
+        let packages: Vec<String> = packages
+            .into_iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        if packages.is_empty() {
+            anyhow::bail!(t!("analyze.empty_packages_list"));
+        }
+
+        if verbose {
+            Logger::info(tf!("analyze.multi_packages_start", packages.join(", ")));
+        }
+
+        analyzer.analyze_packages(&packages)?
+    } else if let Some(package_name) = args.package {
         // 单包分析
         analyzer.analyze_single_package(&package_name)?
     } else {

@@ -8,6 +8,7 @@ MonoX is an intelligent build tool designed specifically for monorepo projects, 
 
 - 🔍 **Smart Dependency Analysis** - Automatically parse package dependencies and build directed acyclic graphs
 - 📦 **Single Package Analysis** - Support analyzing specific packages and their dependency chains for precise build scope
+- 📦 **Multi-Package Operations** - Support simultaneous operations on multiple specified packages
 - ⚡ **Concurrent Task Execution** - Concurrent builds within the same stage to maximize CPU utilization
 - 🛡️ **Safety Checks** - Circular dependency detection, version conflict checking, outdated dependency scanning
 - 📊 **Real-time Progress Display** - Beautiful progress bars and task status visualization
@@ -75,6 +76,9 @@ monox run --all --command build
 # Run specific package and its dependencies
 monox run @your-org/package-name --command build
 
+# Run multiple specific packages (multi-package execution)
+monox run --packages "@your-org/pkg1,@your-org/pkg2,@your-org/pkg3" --command build
+
 # Verbose mode to show execution process
 monox run --all --command build --verbose
 ```
@@ -84,6 +88,9 @@ monox run --all --command build --verbose
 ```bash
 # Execute predefined tasks
 monox exec build-all
+
+# Execute multi-package task defined in configuration
+monox exec build-frontend
 
 # Verbose mode
 monox exec test-all --verbose
@@ -138,14 +145,16 @@ monox analyze --format json               # Output in JSON format
 monox analyze --verbose                    # Show detailed dependency relationships
 monox analyze --package <package-name>    # Analyze specific single package and its dependency chain
 monox analyze --package <package-name> --detail  # Single package analysis with detailed information
+monox analyze --packages "pkg1,pkg2,pkg3" # Analyze multiple specified packages and their dependencies
 ```
 
 #### `run` - Execute Commands
 
 ```bash
-monox run <package> --command <cmd>    # Run command for specific package
-monox run --all --command <cmd>        # Run command for all packages
-monox run --all --command build -v     # Verbose mode execution
+monox run <package> --command <cmd>         # Run command for specific package
+monox run --all --command <cmd>             # Run command for all packages
+monox run --packages "pkg1,pkg2" --command <cmd>  # Run command for multiple specified packages
+monox run --all --command build -v          # Verbose mode execution
 ```
 
 #### `exec` - Execute Predefined Tasks
@@ -205,6 +214,13 @@ pkg_name = "@your-org/system"
 desc = "Test system core package"
 command = "test"
 
+# Multi-package task example
+[[tasks]]
+name = "build-frontend"
+desc = "Build frontend related packages"
+command = "build"
+packages = ["@your-org/web-ui", "@your-org/mobile-app", "@your-org/shared-components"]
+
 # Execution configuration
 [execution]
 max_concurrency = 4        # Maximum concurrency
@@ -234,9 +250,12 @@ language = "zh_cn"        # Interface language (en_us, zh_cn)
 #### [[tasks]] - Task Definition
 
 - `name`: Task name, used for `monox exec <name>`
-- `pkg_name`: Package name, "*" means all packages
+- `pkg_name`: Package name, "*" means all packages (optional, can use `packages` instead)
+- `packages`: Array of package names for multi-package operations (optional, alternative to `pkg_name`)
 - `desc`: Task description (optional)
 - `command`: Command to execute
+
+Note: Each task must specify either `pkg_name` or `packages` field.
 
 #### [execution] - Execution Control
 
@@ -456,4 +475,63 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Design Document](DESIGN.md)
 - [Development Task List](TODOLIST.md)
 - [Change Log](CHANGELOG.md)
-- [Issue Tracking](https://github.com/your-org/monox/issues) 
+- [Issue Tracking](https://github.com/your-org/monox/issues)
+
+## 📦 Multi-Package Operations
+
+MonoX supports efficient operations on multiple specified packages:
+
+### Features
+
+- **Flexible Package Selection**: Specify multiple packages via command line or configuration
+- **Intelligent Dependency Analysis**: Automatically analyze dependencies between specified packages
+- **Optimized Execution Order**: Execute packages in proper dependency order
+- **Shared Infrastructure**: Reuses single-package analysis and execution infrastructure
+
+### Usage Examples
+
+#### Command Line Multi-Package Operations
+
+```bash
+# Analyze multiple specific packages
+monox analyze --packages "@your-org/ui-lib,@your-org/web-app,@your-org/mobile-app" --detail
+
+# Build multiple specific packages
+monox run --packages "@your-org/ui-lib,@your-org/web-app,@your-org/mobile-app" --command build
+
+# Test multiple packages in verbose mode
+monox run --packages "pkg1,pkg2,pkg3" --command test --verbose
+
+# Parameter priority: --all > --packages > --package
+monox run --all --command build  # Highest priority, builds all packages
+```
+
+#### Configuration File Multi-Package Tasks
+
+```toml
+# Define multi-package task in monox.toml
+[[tasks]]
+name = "build-frontend"
+desc = "Build all frontend related packages"
+command = "build"
+packages = ["@your-org/web-ui", "@your-org/mobile-app", "@your-org/shared-components"]
+
+[[tasks]]
+name = "test-backend"
+desc = "Test backend services"
+command = "test"
+packages = ["@your-org/api-server", "@your-org/auth-service", "@your-org/database-lib"]
+```
+
+```bash
+# Execute multi-package tasks
+monox exec build-frontend
+monox exec test-backend --verbose
+```
+
+### Technical Implementation
+
+- **Multi-Package Analysis**: `analyze_packages()` method supports simultaneous analysis of multiple packages
+- **Smart Deduplication**: Automatically removes duplicate packages and optimizes dependency resolution
+- **Stage-based Execution**: Uses dependency analysis results for intelligent scheduling
+- **Complete Backward Compatibility**: Existing single-package functionality remains unchanged 

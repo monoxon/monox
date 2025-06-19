@@ -207,6 +207,48 @@ impl TaskExecutor {
         }
     }
 
+    /// 执行多个指定包（基于包名列表）
+    pub async fn execute_packages(&self, package_names: &[String], command: &str) -> Result<()> {
+        // 获取工作区根目录（从全局配置中获取）
+        let workspace_root = Config::get_workspace_root();
+        // 创建分析器，获取包信息
+        let mut analyzer =
+            DependencyAnalyzer::new(workspace_root.to_path_buf()).with_verbose(self.config.verbose);
+        let analysis_result = analyzer.analyze_packages(package_names)?;
+
+        Logger::info(tf!("run.scanning_packages", package_names.join(", ")));
+
+        // 验证所有指定的包都存在
+        for package_name in package_names {
+            let package = analysis_result
+                .packages
+                .iter()
+                .find(|p| p.name == *package_name)
+                .ok_or_else(|| anyhow::anyhow!(tf!("run.package_not_found", package_name)))?;
+
+            // 检查包是否有指定的脚本
+            if !package.scripts.contains_key(command) {
+                anyhow::bail!(tf!("run.script_not_found", package_name, command));
+            }
+        }
+
+        // 计算所有阶段中包含该脚本的包数量
+        let executable_count = analysis_result
+            .stages
+            .iter()
+            .flat_map(|stage| stage.iter())
+            .filter(|pkg| pkg.scripts.contains_key(command))
+            .count();
+
+        Logger::info(tf!(
+            "run.found_executable_packages",
+            executable_count,
+            command
+        ));
+
+        self.execute_stages(&analysis_result.stages, command).await
+    }
+
     /// 执行所有包（all = true）
     async fn execute_all_packages(&self, command: &str) -> Result<()> {
         // 获取工作区根目录（从全局配置中获取）

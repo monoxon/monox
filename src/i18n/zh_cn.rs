@@ -41,6 +41,11 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("analyze.single_package_start", "开始分析单个包: {}"),
     ("analyze.single_package_found", "找到目标包 '{}': {}"),
     ("analyze.single_package_completed", "单包分析完成: {}，耗时 {}ms"),
+    // 多包分析相关
+    ("analyze.multi_packages_start", "开始分析多个包: {}"),
+    ("analyze.multi_package_found", "找到目标包 '{}': {}"),
+    ("analyze.multi_packages_completed", "多包分析完成: {}，耗时 {}ms"),
+    ("analyze.empty_packages_list", "包列表不能为空"),
     // 检查相关
             ("check.issues_found", "发现过期依赖，请查看上述详情"),
     ("check.all_good", "所有检查通过，工作区状态良好"),
@@ -251,6 +256,8 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("run.partial_success", "部分包执行成功"),
     ("run.completed", "脚本执行完成"),
     ("run.missing_package_or_all", "必须指定包名或使用 --all 参数"),
+    ("run.empty_packages_list", "packages 参数不能为空"),
+    ("run.scanning_packages", "扫描指定包: {}"),
     // Exec 命令相关
     ("exec.start", "开始执行预定义任务: {}"),
     ("exec.task_not_found", "未找到任务定义: {}"),
@@ -258,6 +265,9 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("exec.task_description", "任务描述: {}"),
     ("exec.executing_all_packages", "在所有包中执行任务"),
     ("exec.executing_package", "在包 '{}' 中执行任务"),
+    ("exec.executing_packages", "在指定包中执行任务: {}"),
+    ("exec.empty_packages_list", "配置中的 packages 列表不能为空"),
+    ("exec.missing_target_config", "任务配置必须指定 pkg_name 或 packages 字段"),
     // 调度器相关
     ("scheduler.task_start", "开始执行任务: {}"),
     ("scheduler.task_success", "任务执行成功: {}，耗时 {:.2}s"),

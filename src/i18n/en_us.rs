@@ -50,6 +50,11 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("analyze.single_package_start", "Starting single package analysis: {}"),
     ("analyze.single_package_found", "Found target package '{}': {}"),
     ("analyze.single_package_completed", "Single package analysis completed: {}, took {}ms"),
+    // Multi-package analysis related
+    ("analyze.multi_packages_start", "Starting multi-package analysis: {}"),
+    ("analyze.multi_package_found", "Found target package '{}': {}"),
+    ("analyze.multi_packages_completed", "Multi-package analysis completed: {}, took {}ms"),
+    ("analyze.empty_packages_list", "Package list cannot be empty"),
     // Check related
             ("check.issues_found", "Outdated dependencies found, please check details above"),
     ("check.all_good", "All checks passed, workspace is healthy"),
@@ -281,6 +286,8 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("run.partial_success", "Some packages executed successfully"),
     ("run.completed", "Script execution completed"),
     ("run.missing_package_or_all", "Must specify package name or use --all flag"),
+    ("run.empty_packages_list", "packages parameter cannot be empty"),
+    ("run.scanning_packages", "Scanning specified packages: {}"),
     // Exec command related
     ("exec.start", "Starting predefined task: {}"),
     ("exec.task_not_found", "Task definition not found: {}"),
@@ -288,6 +295,9 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("exec.task_description", "Task description: {}"),
     ("exec.executing_all_packages", "Executing task in all packages"),
     ("exec.executing_package", "Executing task in package '{}'"),
+    ("exec.executing_packages", "Executing task in specified packages: {}"),
+    ("exec.empty_packages_list", "packages list in configuration cannot be empty"),
+    ("exec.missing_target_config", "Task configuration must specify either pkg_name or packages field"),
     // Scheduler related
     ("scheduler.task_start", "Starting task: {}"),
     ("scheduler.task_success", "Task completed successfully: {}, took {:.2}s"),

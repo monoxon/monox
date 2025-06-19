@@ -8,6 +8,7 @@ MonoX 是一个专为 monorepo 项目设计的智能构建工具，通过依赖�
 
 - 🔍 **智能依赖分析** - 自动解析包依赖关系，构建有向无环图
 - 📦 **单包分析** - 支持分析指定包及其依赖链，精确定位构建范围
+- 📦 **多包操作** - 支持同时操作多个指定包
 - ⚡ **并发任务执行** - 同阶段包并发构建，最大化 CPU 利用率
 - 🛡️ **安全性检查** - 循环依赖检测、版本冲突检查、过期依赖扫描
 - 📊 **实时进度显示** - 美观的进度条和任务状态展示
@@ -75,6 +76,9 @@ monox run --all --command build
 # 运行指定包及其依赖
 monox run @your-org/package-name --command build
 
+# 运行多个指定包（多包执行）
+monox run --packages "@your-org/pkg1,@your-org/pkg2,@your-org/pkg3" --command build
+
 # 详细模式显示执行过程
 monox run --all --command build --verbose
 ```
@@ -84,6 +88,9 @@ monox run --all --command build --verbose
 ```bash
 # 执行预定义任务
 monox exec build-all
+
+# 执行配置文件中定义的多包任务
+monox exec build-frontend
 
 # 详细模式
 monox exec test-all --verbose
@@ -169,14 +176,16 @@ monox analyze --format json               # 输出 JSON 格式
 monox analyze --verbose                    # 显示详细依赖关系
 monox analyze --package <package-name>    # 分析指定单个包及其依赖链
 monox analyze --package <package-name> --detail  # 单包分析显示详细信息
+monox analyze --packages "pkg1,pkg2,pkg3" # 分析多个指定包及其依赖关系
 ```
 
 #### `run` - 执行命令
 
 ```bash
-monox run <package> --command <cmd>    # 运行指定包的命令
-monox run --all --command <cmd>        # 运行所有包的命令
-monox run --all --command build -v     # 详细模式显示执行过程
+monox run <package> --command <cmd>         # 运行指定包的命令
+monox run --all --command <cmd>             # 运行所有包的命令
+monox run --packages "pkg1,pkg2" --command <cmd>  # 运行多个指定包的命令
+monox run --all --command build -v          # 详细模式显示执行过程
 ```
 
 #### `exec` - 执行预定义任务
@@ -266,6 +275,19 @@ pkg_name = "@your-org/system"
 desc = "测试系统核心包"
 command = "test"
 
+# 多包任务示例
+[[tasks]]
+name = "build-frontend"
+desc = "构建所有前端相关包"
+command = "build"
+packages = ["@your-org/web-ui", "@your-org/mobile-app", "@your-org/shared-components"]
+
+[[tasks]]
+name = "test-backend"
+desc = "测试后端服务"
+command = "test"
+packages = ["@your-org/api-server", "@your-org/auth-service", "@your-org/database-lib"]
+
 # 执行配置
 [execution]
 max_concurrency = 4        # 最大并发数
@@ -295,9 +317,12 @@ language = "zh_cn"        # 界面语言 (en_us, zh_cn)
 #### [[tasks]] - 任务定义
 
 - `name`: 任务名称，用于 `monox exec <name>`
-- `pkg_name`: 包名，"\*" 表示所有包
+- `pkg_name`: 包名，"\*" 表示所有包（可选，可用 `packages` 替代）
+- `packages`: 包名数组，用于多包操作（可选，替代 `pkg_name`）
 - `desc`: 任务描述（可选）
 - `command`: 执行的命令
+
+注意：每个任务必须指定 `pkg_name` 或 `packages` 字段之一。
 
 #### [execution] - 执行控制
 
@@ -517,3 +542,62 @@ monox analyze --verbose --detail
 - [开发任务清单](TODOLIST.md)
 - [更新日志](CHANGELOG.md)
 - [问题反馈](https://github.com/your-org/monox/issues)
+
+## 📦 多包操作功能
+
+MonoX 支持对多个指定包进行高效操作：
+
+### 功能特点
+
+- **灵活包选择**：通过命令行或配置文件指定多个包
+- **智能依赖分析**：自动分析指定包之间的依赖关系
+- **优化执行顺序**：按正确的依赖顺序执行包
+- **共享基础设施**：复用单包分析和执行基础设施
+
+### 使用示例
+
+#### 命令行多包操作
+
+```bash
+# 分析多个指定包
+monox analyze --packages "@your-org/ui-lib,@your-org/web-app,@your-org/mobile-app" --detail
+
+# 构建多个指定包
+monox run --packages "@your-org/ui-lib,@your-org/web-app,@your-org/mobile-app" --command build
+
+# 测试多个包（详细模式）
+monox run --packages "pkg1,pkg2,pkg3" --command test --verbose
+
+# 参数优先级：--all > --packages > --package
+monox run --all --command build  # 最高优先级，构建所有包
+```
+
+#### 配置文件多包任务
+
+```toml
+# 在 monox.toml 中定义多包任务
+[[tasks]]
+name = "build-frontend"
+desc = "构建所有前端相关包"
+command = "build"
+packages = ["@your-org/web-ui", "@your-org/mobile-app", "@your-org/shared-components"]
+
+[[tasks]]
+name = "test-backend"
+desc = "测试后端服务"
+command = "test"
+packages = ["@your-org/api-server", "@your-org/auth-service", "@your-org/database-lib"]
+```
+
+```bash
+# 执行多包任务
+monox exec build-frontend
+monox exec test-backend --verbose
+```
+
+### 技术实现
+
+- **多包分析**：`analyze_packages()` 方法支持同时分析多个包
+- **智能去重**：自动去除重复包并优化依赖解析
+- **阶段化执行**：基于依赖分析结果进行智能调度
+- **完全向后兼容**：现有单包功能保持不变
