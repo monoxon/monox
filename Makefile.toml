@@ -5,108 +5,7 @@ min_version = "0.36.0"
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
-[tasks.help]
-description = "显示所有可用命令"
-script = '''
-echo "MonoX 开发工具命令："
-echo ""
-echo "开发命令："
-echo "  cargo make dev          - 开发模式（文件监听 + 检查 + 格式化）"
-echo "  cargo make dev-test     - 开发模式（文件监听 + 检查 + 测试）"
-echo "  cargo make build        - 构建项目"
-echo "  cargo make run          - 运行项目 (使用 ARGS 环境变量传参)"
-echo "  cargo make test         - 运行测试"
-echo "  cargo make check        - 快速检查代码（不生成二进制文件）"
-echo ""
-echo "代码质量："
-echo "  cargo make fmt          - 格式化代码"
-echo "  cargo make lint         - 静态检查"
-echo "  cargo make ci           - 完整 CI 检查（格式化 + 静态检查 + 测试）"
-echo ""
-echo "发布命令："
-echo "  cargo make release      - 构建发布版本"
-echo "  cargo make install      - 安装到系统"
-echo "  cargo make clean        - 清理构建文件"
-echo ""
-echo "工具命令："
-echo "  cargo make doc          - 生成文档"
-echo "  cargo make setup        - 设置开发环境"
-echo "  cargo make profile      - 性能分析构建"
-echo "  cargo make bench        - 运行基准测试"
-echo "  cargo make update       - 更新依赖"
-echo "  cargo make audit        - 安全审计"
-echo ""
-echo "示例："
-echo "  ARGS='analyze' cargo make run"
-echo "  ARGS='--help' cargo make run"
-'''
-
-[tasks.dev]
-description = "开发模式 - 文件监听和自动重新构建"
-install_crate = "cargo-watch"
-command = "cargo-watch"
-args = ["-x", "check", "-x", "fmt", "-x", "build"]
-
-[tasks.dev-test]
-description = "开发模式 - 包含测试的文件监听"
-install_crate = "cargo-watch"
-command = "cargo-watch"
-args = ["-x", "check", "-x", "test"]
-
-[tasks.build]
-description = "构建项目"
-command = "cargo"
-args = ["build"]
-
-[tasks.run]
-description = "运行项目"
-command = "cargo"
-args = ["run", "--", "${ARGS}"]
-env = { "ARGS" = "" }
-
-[tasks.test]
-description = "运行测试"
-command = "cargo"
-args = ["test"]
-
-[tasks.check]
-description = "快速检查代码（不生成二进制文件）"
-command = "cargo"
-args = ["check"]
-
-[tasks.fmt]
-description = "格式化代码"
-command = "cargo"
-args = ["fmt"]
-
-[tasks.lint]
-description = "静态检查"
-command = "cargo"
-args = ["clippy", "--", "-D", "warnings"]
-
-[tasks.ci]
-description = "完整 CI 检查"
-dependencies = ["fmt", "lint", "test"]
-
-[tasks.release]
-description = "构建发布版本"
-command = "cargo"
-args = ["build", "--release"]
-
-[tasks.install]
-description = "安装到系统"
-command = "cargo"
-args = ["install", "--path", "."]
-
-[tasks.clean]
-description = "清理构建文件"
-command = "cargo"
-args = ["clean"]
-
-[tasks.doc]
-description = "生成文档"
-command = "cargo"
-args = ["doc", "--open"]
+# 基础任务
 
 [tasks.setup]
 description = "设置开发环境"
@@ -118,28 +17,165 @@ cargo install cargo-audit
 echo "开发环境设置完成！"
 '''
 
-[tasks.profile]
-description = "性能分析构建"
+[tasks.update]
+args = ["update"]
 command = "cargo"
+description = "更新依赖"
+
+[tasks.dev]
+dependencies = [
+  "clean",
+  "check-format",
+  "lint",
+  "test",
+  "build",
+]
+description = "开发流程 - 清理、检查格式、测试和构建"
+
+[tasks.watch]
+args = ["watch", "-x", "check", "-x", "test", "-i", "examples/**/*", "-i", "docs/**/*"]
+command = "cargo"
+description = "监听变化并重新构建"
+install_crate = "cargo-watch"
+
+[tasks.doc]
+args = ["doc", "--open"]
+command = "cargo"
+description = "生成文档"
+
+# 辅助任务
+
+[tasks.clean]
+args = ["clean"]
+command = "cargo"
+description = "清理构建产物"
+
+[tasks.check]
+args = ["check"]
+command = "cargo"
+dependencies = ["check-format", "clippy"]
+description = "检查编译"
+
+[tasks.check-format]
+args = ["fmt", "--check"]
+command = "cargo"
+description = "检查代码格式"
+
+[tasks.format]
+args = ["fmt"]
+command = "cargo"
+description = "格式化代码"
+
+[tasks.lint]
+args = [
+  "clippy",
+  "--all-targets",
+  "--all-features",
+  "--",
+  "-W",
+  "clippy::complexity",
+  "-W",
+  "clippy::correctness",
+  "-A",
+  "dead_code",
+  "-A",
+  "unused_imports",
+  "-A",
+  "unused_variables",
+]
+command = "cargo"
+description = "运行 clippy lints"
+
+[tasks.test]
+args = ["test"]
+command = "cargo"
+description = "运行测试"
+
+[tasks.profile]
 args = ["build", "--release", "--profile", "profiling"]
+command = "cargo"
+description = "性能分析构建"
 
 [tasks.bench]
-description = "运行基准测试"
-command = "cargo"
 args = ["bench"]
-
-[tasks.update]
-description = "更新依赖"
 command = "cargo"
-args = ["update"]
+description = "运行基准测试"
 
 [tasks.audit]
+args = ["audit"]
+command = "cargo"
 description = "安全审计"
 install_crate = "cargo-audit"
-command = "cargo"
-args = ["audit"]
 
 [tasks.test-verbose]
-description = "详细测试输出"
+args = ["test", "--", "--nocapture"]
 command = "cargo"
-args = ["test", "--", "--nocapture"] 
+description = "详细测试输出"
+
+# Linux targets
+
+[tasks.setup-linux-x86_64]
+args = ["target", "add", "x86_64-unknown-linux-gnu"]
+command = "rustup"
+description = "Setup Linux x86_64 target"
+
+[tasks.setup-linux-aarch64]
+args = ["target", "add", "aarch64-unknown-linux-gnu"]
+command = "rustup"
+description = "Setup Linux aarch64 target"
+
+[tasks.build-x86_64-unknown-linux-gnu]
+args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
+command = "cargo"
+dependencies = ["setup-linux-x86_64"]
+description = "Build release version for x86_64-unknown-linux-gnu"
+
+[tasks.build-aarch64-unknown-linux-gnu]
+args = ["build", "--target", "aarch64-unknown-linux-gnu", "--release"]
+command = "cargo"
+dependencies = ["setup-linux-aarch64"]
+description = "Build release version for aarch64-unknown-linux-gnu"
+
+# macOS targets
+
+[tasks.setup-macos-x86_64]
+args = ["target", "add", "x86_64-apple-darwin"]
+command = "rustup"
+description = "Setup macOS x86_64 target"
+
+[tasks.setup-macos-aarch64]
+args = ["target", "add", "aarch64-apple-darwin"]
+command = "rustup"
+description = "Setup macOS aarch64 target"
+
+[tasks.build-x86_64-apple-darwin]
+args = ["build", "--target", "x86_64-apple-darwin", "--release"]
+command = "cargo"
+dependencies = ["setup-macos-x86_64"]
+description = "Build release version for x86_64-apple-darwin"
+
+[tasks.build-aarch64-apple-darwin]
+args = ["build", "--target", "aarch64-apple-darwin", "--release"]
+command = "cargo"
+dependencies = ["setup-macos-aarch64"]
+description = "Build release version for aarch64-apple-darwin"
+
+# Build release version for all targets
+
+[tasks.build-macos]
+args = ["Build release version for macOS"]
+command = "echo"
+dependencies = [
+  "build-x86_64-apple-darwin",
+  "build-aarch64-apple-darwin",
+]
+description = "Build release version for macOS"
+
+[tasks.build-linux]
+args = ["Build release version for Linux"]
+command = "echo"
+dependencies = [
+  "build-x86_64-unknown-linux-gnu",
+  "build-aarch64-unknown-linux-gnu",
+]
+description = "Build release version for Linux"
