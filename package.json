@@ -1,6 +1,6 @@
 {
   "name": "monox",
-  "version": "0.1.4",
+  "version": "0.1.1",
   "description": "Lightweight monorepo build tool written in Rust",
   "keywords": [
     "monorepo",
@@ -33,27 +33,15 @@
   "license": "MIT",
   "author": "Simple Data Team",
   "bin": {
-    "monox": "./target/release/monox"
+    "monox": "./monox"
   },
   "files": [
-    "target/release/monox",
     "README.md",
     "README.zh.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "cargo build --release",
-    "test": "cargo test",
-    "lint": "cargo clippy -- -D warnings",
-    "format": "cargo fmt",
-    "format:check": "cargo fmt --check",
-    "changeset": "changeset",
-    "version": "changeset version && git add . && git commit -m \"chore: version packages\"",
-    "release": "pnpm run build && changeset publish --no-git-tag && pnpm run tag",
-    "tag": "git tag v$(node -p 'require(\"./package.json\").version') && git push origin v$(node -p 'require(\"./package.json\").version')",
-    "prepare-release": "./scripts/release.sh",
-    "dev": "cargo run --",
-    "check": "cargo check"
+    "postinstall": "./install.sh"
   },
   "engines": {
     "node": ">=14.0.0",
@@ -61,16 +49,12 @@
   },
   "os": [
     "darwin",
-    "linux",
-    "win32"
+    "linux"
   ],
   "cpu": [
     "x64",
     "arm64"
   ],
-  "devDependencies": {
-    "@changesets/cli": "^2.27.0"
-  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

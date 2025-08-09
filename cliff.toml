@@ -24,9 +24,9 @@ remove_commit_prefix = true
 conventional_commits = true
 filter_unconventional = true
 commit_preprocessors = [
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/your-username/demo-rust/issues/${2}))" },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/monoxon/monox/issues/${2}))" },
 ]
 commit_postprocessors = [
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/your-username/demo-rust/issues/${2}))" },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/monoxon/monox/issues/${2}))" },
 ]
 

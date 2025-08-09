@@ -154,7 +154,7 @@ graph TD
 
 1. **克隆项目**
    ```bash
-   git clone https://github.com/your-org/monox.git
+   git clone https://github.com/monoxon/monox.git
    cd monox
    ```
 
@@ -454,7 +454,7 @@ MonoX 支持双平台发布：Rust 生态系统 (crates.io) 和 Node.js 生态�
 
 ### npm 发布流程 (推荐)
 
-我们使用 [Changesets](https://github.com/changesets/changesets) 管理版本和变更日志：
+参照 RELEASE.md
 
 #### 1. 准备发布
 
@@ -484,16 +484,14 @@ pnpm run changeset
 
 #### 3. 更新版本
 
-```bash
-# 更新版本号并自动提交
-pnpm run version
-```
+- 更新 `Cargo.toml` 版本号
+- 更新 `CHANGELOG`
 
-这会：
-- 更新 `package.json` 版本号
-- 生成 `CHANGELOG.md`
-- 消费 `.changeset` 中的变更记录
-- 自动提交版本变更
+```sh
+cargo release patch --execute --no-confirm --no-publish
+cargo release minor --execute --no-confirm --no-publish
+cargo release major --execute --no-confirm --no-publish
+```
 
 #### 4. 发布到 npm
 

@@ -330,4 +330,4 @@ exec/run: 配置加载 → 工作区扫描 → 循环依赖检查(有循环依�
 
 ---
 
-本文档将随着项目发展持续更新。如有技术问题或建议，请参与 [GitHub Discussions](https://github.com/your-org/monox/discussions)。
+本文档将随着项目发展持续更新。如有技术问题或建议，请参与 [GitHub Discussions](https://github.com/monoxon/monox/discussions)。

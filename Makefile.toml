@@ -11,6 +11,7 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 description = "设置开发环境"
 script = '''
 echo "安装开发工具..."
+chmod +x pre-release.sh
 cargo install cargo-watch
 cargo install cargo-edit
 cargo install cargo-audit

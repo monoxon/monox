@@ -31,7 +31,7 @@ pnpm add -g monox
 yarn global add monox
 
 # 从源码构建（需要 Rust 环境）
-git clone https://github.com/your-org/monox.git
+git clone https://github.com/monoxon/monox.git
 cd monox
 cargo build --release
 
