@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] - 2025-08-09
+
+### 🐛 Bug Fixes
+
+- 修复 install.sh
+
 ## [0.2.4] - 2025-08-09
 
 ### ⚙️ Miscellaneous Tasks
 
 - 修复 install.sh
+- Release monox version 0.2.4
 
 ## [0.2.3] - 2025-08-09
 
