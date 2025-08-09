@@ -43,13 +43,11 @@ case $(uname -s) in
         ;;
 esac
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BINARY_NAME="monox-$ARCH-$OS"
 DOWNLOAD_URL="https://github.com/monoxon/monox/releases/download/$LATEST_VERSION/${BINARY_NAME}"
 TARGET_DIR="$SCRIPT_DIR"
 TARGET_BINARY="$TARGET_DIR/monox"
-
-# 创建目标目录（如果不存在）
-mkdir -p "$TARGET_DIR"
 
 # 下载二进制文件
 echo "正在下载 monox $LATEST_VERSION (${ARCH}-${OS})..."
