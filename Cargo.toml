@@ -1,6 +1,6 @@
 [package]
 name = "monox"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "轻量级 monorepo 构建工具"
 authors = ["Simple Data Team"]

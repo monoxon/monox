@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2025-08-09
+
+### 🐛 Bug Fixes
+
+- 修复安装执行
+
 ## [0.2.1] - 2025-08-09
 
 ### ⚙️ Miscellaneous Tasks
 
 - 添加 install.sh 文件跟踪
+- Release monox version 0.2.1
 
 ## [0.2.0] - 2025-08-09
 
