@@ -43,7 +43,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "prepare": "bash install.sh"
+    "postinstall": "bash install.sh"
   },
   "engines": {
     "node": ">=14.0.0",
