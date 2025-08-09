@@ -33,6 +33,7 @@
   "license": "MIT",
   "author": "Simple Data Team",
   "bin": {
+    "monox-install": "./install.sh",
     "monox": "./monox"
   },
   "files": [
@@ -42,7 +43,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "./install.sh"
+    "prepare": "bash install.sh"
   },
   "engines": {
     "node": ">=14.0.0",

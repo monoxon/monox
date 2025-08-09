@@ -37,6 +37,9 @@ cargo build --release
 
 # Add executable to PATH
 cp target/release/monox /usr/local/bin/
+
+# Install failed, use install.sh
+pnpm monox-install
 ```
 
 ### Initialize Configuration
