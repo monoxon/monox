@@ -36,6 +36,7 @@
     "monox": "./monox"
   },
   "files": [
+    "install.sh",
     "README.md",
     "README.zh.md",
     "LICENSE"
