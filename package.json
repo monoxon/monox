@@ -22,13 +22,13 @@
     "automation",
     "ci-cd"
   ],
-  "homepage": "https://gitcode.com/heizi-bin/monox",
+  "homepage": "https://github.com/monoxon/monox",
   "bugs": {
-    "url": "https://gitcode.com/heizi-bin/monox/issues"
+    "url": "https://github.com/monoxon/monox/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitcode.com/heizi-bin/monox.git"
+    "url": "git+https://github.com/monoxon/monox.git"
   },
   "license": "MIT",
   "author": "Simple Data Team",
