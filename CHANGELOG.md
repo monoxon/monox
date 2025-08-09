@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2025-08-09
+
+### ⚙️ Miscellaneous Tasks
+
+- 添加 install.sh 文件跟踪
+
 ## [0.2.0] - 2025-08-09
 
 ### ⚙️ Miscellaneous Tasks
 
 - 修改下载方案, 根据不同平台从 github assets 下载资源
+- Release monox version 0.2.0
 
 ## [0.1.1] - 2025-08-09
 
