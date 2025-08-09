@@ -1,0 +1,23 @@
+# Release.toml
+
+# 不自动发布（仅修改版本号）
+# publish = false
+
+# 不推送到远程仓库
+# push = false
+
+# 创建 Git tag
+tag = true
+
+# 不签名提交和 tag
+# sign-commit = false
+# sign-tag = falsegit 
+
+# 跳过验证（比如 workspace 检查）
+allow-branch = ["main"]
+
+pre-release-hook = [
+  "sh",
+  "-c",
+  "git cliff -o CHANGELOG.md --tag {{version}} && git add CHANGELOG.md",
+]
