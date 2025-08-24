@@ -1,7 +1,7 @@
 {
-  "name": "monox",
+  "name": "@monox/darwin-arm64",
   "version": "0.2.5",
-  "description": "Lightweight monorepo build tool written in Rust",
+  "description": "Lightweight monorepo build tool written in Rust - macOS ARM64 binary",
   "keywords": [
     "monorepo",
     "build-tool",
@@ -31,30 +31,17 @@
     "url": "git+https://github.com/monoxon/monox.git"
   },
   "license": "MIT",
-  "author": "Simple Data Team",
+  "author": "xiaoYown",
   "bin": {
-    "monox-install": "./install.sh",
-    "monox": "./monox"
+    "monox": "monox"
   },
   "files": [
-    "install.sh",
-    "README.md",
-    "README.zh.md",
-    "LICENSE"
+    "monox"
   ],
-  "scripts": {
-    "postinstall": "bash install.sh"
-  },
-  "engines": {
-    "node": ">=14.0.0",
-    "pnpm": ">=7.0.0"
-  },
   "os": [
-    "darwin",
-    "linux"
+    "darwin"
   ],
   "cpu": [
-    "x64",
     "arm64"
   ],
   "publishConfig": {

@@ -19,5 +19,5 @@ allow-branch = ["main"]
 pre-release-hook = [
   "sh",
   "-c",
-  "./pre-release.sh",
+  "git cliff -o CHANGELOG.md --tag {{version}} && git add CHANGELOG.md",
 ]

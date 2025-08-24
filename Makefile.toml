@@ -126,16 +126,26 @@ command = "rustup"
 description = "Setup Linux aarch64 target"
 
 [tasks.build-x86_64-unknown-linux-gnu]
-args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
-command = "cargo"
 dependencies = ["setup-linux-x86_64"]
 description = "Build release version for x86_64-unknown-linux-gnu"
+script = '''
+cargo build --target x86_64-unknown-linux-gnu --release
+cp target/x86_64-unknown-linux-gnu/release/monox npm/packages/linux-x64/monox
+cp README.md npm/packages/linux-x64/README.md
+cp README.zh.md npm/packages/linux-x64/README.zh.md
+echo "✅ Copied binary to npm/packages/linux-x64/monox"
+'''
 
 [tasks.build-aarch64-unknown-linux-gnu]
-args = ["build", "--target", "aarch64-unknown-linux-gnu", "--release"]
-command = "cargo"
 dependencies = ["setup-linux-aarch64"]
 description = "Build release version for aarch64-unknown-linux-gnu"
+script = '''
+cargo build --target aarch64-unknown-linux-gnu --release
+cp target/aarch64-unknown-linux-gnu/release/monox npm/packages/linux-arm64/monox
+cp README.md npm/packages/linux-arm64/README.md
+cp README.zh.md npm/packages/linux-arm64/README.zh.md
+echo "✅ Copied binary to npm/packages/linux-arm64/monox"
+'''
 
 # macOS targets
 
@@ -150,16 +160,30 @@ command = "rustup"
 description = "Setup macOS aarch64 target"
 
 [tasks.build-x86_64-apple-darwin]
-args = ["build", "--target", "x86_64-apple-darwin", "--release"]
-command = "cargo"
 dependencies = ["setup-macos-x86_64"]
 description = "Build release version for x86_64-apple-darwin"
+script = '''
+cargo build --target x86_64-apple-darwin --release
+cp target/x86_64-apple-darwin/release/monox npm/packages/darwin-x64/monox
+cp README.md npm/packages/darwin-x64/README.md
+cp README.zh.md npm/packages/darwin-x64/README.zh.md
+echo "✅ Copied binary to npm/packages/darwin-x64/monox"
+'''
 
 [tasks.build-aarch64-apple-darwin]
-args = ["build", "--target", "aarch64-apple-darwin", "--release"]
-command = "cargo"
 dependencies = ["setup-macos-aarch64"]
 description = "Build release version for aarch64-apple-darwin"
+script = '''
+cargo build --target aarch64-apple-darwin --release
+cp target/aarch64-apple-darwin/release/monox npm/packages/darwin-arm64/monox
+cp README.md npm/packages/darwin-arm64/README.md
+cp README.zh.md npm/packages/darwin-arm64/README.zh.md
+cp target/aarch64-apple-darwin/release/monox npm/monox/monox
+cp README.md npm/monox/README.md
+cp README.zh.md npm/monox/README.zh.md
+echo "✅ Copied binary to npm/packages/darwin-arm64/monox"
+echo "✅ Copied binary to npm/monox/monox (default platform)"
+'''
 
 # Build release version for all targets
 
@@ -180,3 +204,12 @@ dependencies = [
   "build-aarch64-unknown-linux-gnu",
 ]
 description = "Build release version for Linux"
+
+# Build all platforms
+
+[tasks.build-all-platforms]
+description = "Build release version for all platforms"
+dependencies = [
+  "build-macos",
+  "build-linux",
+]

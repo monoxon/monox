@@ -39,7 +39,7 @@ use update::{handle_update, UpdateArgs};
 #[derive(Debug, Parser)]
 #[command(name = "monox")]
 #[command(about = "Lightweight monorepo build tool based on Rust")]
-#[command(version = env!("PACKAGE_VERSION"))]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 pub struct Cli {
     /// Global verbose mode
     #[arg(short, long, global = true)]
@@ -128,11 +128,7 @@ fn build_runtime_args(cli: &Cli) -> crate::models::config::RuntimeArgs {
         max_concurrency: cli.max_concurrency,
         task_timeout: cli.timeout,
         retry_count: cli.retry,
-        continue_on_failure: if cli.continue_on_failure {
-            Some(true)
-        } else {
-            None
-        },
+        continue_on_failure: if cli.continue_on_failure { Some(true) } else { None },
         workspace_root: cli.workspace_root.clone(),
         language: cli.language.clone(),
     }

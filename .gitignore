@@ -5,3 +5,10 @@ target
 .DS_Store
 
 node_modules
+
+# binary
+npm/**/monox
+
+# docs
+npm/**/README.md
+npm/**/README.zh.md

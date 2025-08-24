@@ -3,7 +3,7 @@ name = "monox"
 version = "0.2.5"
 edition = "2021"
 description = "轻量级 monorepo 构建工具"
-authors = ["Simple Data Team"]
+authors = ["xiaoYown"]
 
 [[bin]]
 name = "monox"
