@@ -19,5 +19,5 @@ allow-branch = ["main"]
 pre-release-hook = [
   "sh",
   "-c",
-  "node ./scripts/update-npm-versions.js {{version}} && git cliff -o CHANGELOG.md --tag {{version}} && git add CHANGELOG.md npm/",
+  "./scripts/update-npm-versions.sh {{version}} && git cliff -o CHANGELOG.md --tag {{version}} && git add CHANGELOG.md npm/",
 ]
