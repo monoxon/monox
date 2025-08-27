@@ -1,0 +1,16 @@
+{
+  "name": "@monoxon/npm",
+  "version": "0.2.5",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "release": "pnpm changeset publish"
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.27.1"
+  }
+}

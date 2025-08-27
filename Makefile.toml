@@ -33,6 +33,10 @@ dependencies = [
 ]
 description = "开发流程 - 清理、检查格式、测试和构建"
 
+[tasks.release]
+description = "发布"
+script = "cd npm && pnpm run release"
+
 [tasks.watch]
 args = ["watch", "-x", "check", "-x", "test", "-i", "examples/**/*", "-i", "docs/**/*"]
 command = "cargo"

@@ -17,8 +17,8 @@ if [ ! -d "$NPM_DIR" ]; then
     exit 1
 fi
 
-# 查找所有 package.json 文件并更新版本号
-find "$NPM_DIR" -name "package.json" -type f | while read -r package_file; do
+# 查找所有 package.json 文件并更新版本号（排除 node_modules 目录）
+find "$NPM_DIR" -name "package.json" -type f -not -path "*/node_modules/*" | while read -r package_file; do
     echo "Processing: $package_file"
     
     # 创建临时文件
