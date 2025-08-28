@@ -1,6 +1,6 @@
 {
   "name": "monox",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Lightweight monorepo build tool written in Rust",
   "keywords": [
     "monorepo",
@@ -49,10 +49,10 @@
     "node": ">=14.0.0"
   },
   "optionalDependencies": {
-    "@monox/darwin-x64": "0.3.2",
-    "@monox/darwin-arm64": "0.3.2",
-    "@monox/linux-x64": "0.3.2",
-    "@monox/linux-arm64": "0.3.2"
+    "@monox/darwin-x64": "0.3.3",
+    "@monox/darwin-arm64": "0.3.3",
+    "@monox/linux-x64": "0.3.3",
+    "@monox/linux-arm64": "0.3.3"
   },
   "publishConfig": {
     "access": "public",
