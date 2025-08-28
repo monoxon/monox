@@ -25,7 +25,11 @@ find "$NPM_DIR" -name "package.json" -type f -not -path "*/node_modules/*" | whi
     temp_file=$(mktemp)
     
     # 使用 sed 更新版本号，保持原始格式
+    # 首先更新主版本号
     sed "s/^\([[:space:]]*\"version\":[[:space:]]*\"\)[^\"]*\(\".*\)$/\1$NEW_VERSION\2/" "$package_file" > "$temp_file"
+    
+    # 然后更新 optionalDependencies 中的版本号（匹配 @monox/ 开头的包）
+    sed -i '' "s/\(\"@monox\/[^\"]*\":[[:space:]]*\"\)[0-9]*\.[0-9]*\.[0-9]*\(\"\)/\1$NEW_VERSION\2/g" "$temp_file"
     
     # 检查是否有变化
     if ! cmp -s "$package_file" "$temp_file"; then

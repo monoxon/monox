@@ -51,10 +51,10 @@
     "node": ">=14.0.0"
   },
   "optionalDependencies": {
-    "@monox/darwin-x64": "0.2.5",
-    "@monox/darwin-arm64": "0.2.5",
-    "@monox/linux-x64": "0.2.5",
-    "@monox/linux-arm64": "0.2.5"
+    "@monox/darwin-x64": "0.3.0",
+    "@monox/darwin-arm64": "0.3.0",
+    "@monox/linux-x64": "0.3.0",
+    "@monox/linux-arm64": "0.3.0"
   },
   "publishConfig": {
     "access": "public",
