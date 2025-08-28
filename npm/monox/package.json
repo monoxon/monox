@@ -32,20 +32,10 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
-  "bin": {
-    "monox": "monox"
-  },
   "files": [
-    "monox",
     "README.md",
     "README.zh.md",
     "LICENSE"
-  ],
-  "os": [
-    "darwin"
-  ],
-  "cpu": [
-    "arm64"
   ],
   "engines": {
     "node": ">=14.0.0"
