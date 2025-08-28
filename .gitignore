@@ -7,7 +7,7 @@ target
 node_modules
 
 # binary
-npm/**/monox
+npm/packages/**/monox
 
 # docs
 npm/**/README.md

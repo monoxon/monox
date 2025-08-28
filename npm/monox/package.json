@@ -32,11 +32,19 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
+  "bin": {
+    "monox": "bin/monox"
+  },
   "files": [
+    "install.js",
+    "bin/monox",
     "README.md",
     "README.zh.md",
     "LICENSE"
   ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
   "engines": {
     "node": ">=14.0.0"
   },
