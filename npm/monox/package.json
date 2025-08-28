@@ -1,6 +1,6 @@
 {
   "name": "monox",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Lightweight monorepo build tool written in Rust",
   "keywords": [
     "monorepo",
