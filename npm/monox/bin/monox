@@ -11,10 +11,10 @@ function getPlatformPackage() {
   
   const platformKey = `${platform} ${arch}`;
   const packageMap = {
-    'darwin arm64': '@monox/darwin-arm64',
-    'darwin x64': '@monox/darwin-x64',
-    'linux arm64': '@monox/linux-arm64',
-    'linux x64': '@monox/linux-x64'
+    'darwin arm64': '@monoxon/darwin-arm64',
+    'darwin x64': '@monoxon/darwin-x64',
+    'linux arm64': '@monoxon/linux-arm64',
+    'linux x64': '@monoxon/linux-x64'
   };
 
   return packageMap[platformKey];
