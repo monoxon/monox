@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4] - 2025-08-29
+
+### ⚙️ Miscellaneous Tasks
+
+- 尝试修复机制
+
 ## [0.4.3] - 2025-08-29
 
 ### ⚙️ Miscellaneous Tasks
 
 - 移除废弃 script
+- Release monox version 0.4.3
 
 ## [0.4.2] - 2025-08-29
 

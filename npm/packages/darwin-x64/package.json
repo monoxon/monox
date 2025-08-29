@@ -1,6 +1,6 @@
 {
   "name": "@monoxon/darwin-x64",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Lightweight monorepo build tool written in Rust - macOS x64 binary",
   "keywords": [
     "monorepo",
