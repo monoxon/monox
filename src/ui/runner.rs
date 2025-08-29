@@ -523,6 +523,17 @@ impl RunnerUI {
             None, // 暂时不传递执行时长
         );
 
+        // 打印失败和跳过任务名称列表
+        let failed_tasks = self.tasks.values().filter(|t| t.status == TaskStatus::Failed);
+        let skipped_tasks = self.tasks.values().filter(|t| t.status == TaskStatus::Skipped);
+
+        failed_tasks.for_each(|task| {
+            Logger::error(format!("failed: {}", task.package));
+        });
+        skipped_tasks.for_each(|task| {
+            Logger::warn(format!("skipped: {}", task.package));
+        });
+
         // 重置渲染行数（刷新模式下不再清除这个输出）
         if self.supports_refresh && !self.verbose {
             self.rendered_lines = 0;

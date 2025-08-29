@@ -21,12 +21,23 @@ use crate::models::config::Config;
 use crate::models::package::WorkspacePackage;
 use crate::models::{Task, TaskConfig, TaskResult, TaskStatus};
 use crate::ui::runner::RunnerUI;
+use crate::ui::summary::render_execution_summary;
 use crate::utils::logger::Logger;
 use crate::{t, tf};
 use anyhow::{Context, Result};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
+/// 用于收集执行统计的结构
+#[derive(Default, Clone)]
+struct ExecutionStats {
+    total: usize,
+    successful: usize,
+    failed: usize,
+    skipped: usize,
+    start_time: Option<Instant>,
+}
 
 /// 执行命令并返回结果
 async fn run_command(task: &Task) -> Result<TaskResult> {
@@ -84,7 +95,11 @@ async fn run_command(task: &Task) -> Result<TaskResult> {
 }
 
 /// 执行单个任务
-async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Result<()> {
+async fn execute_task(
+    task: &mut Task,
+    ui: Option<Arc<Mutex<RunnerUI>>>,
+    stats_collector: Option<Arc<Mutex<ExecutionStats>>>,
+) -> Result<()> {
     let task_id = format!("{}:{}", task.package_name, task.command);
 
     // 更新 UI 或打印日志
@@ -105,6 +120,12 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
         } else if Config::get_verbose() {
             Logger::warn(tf!("executor.task_skipped", &task.package_name, &task.command));
         }
+
+        // 更新统计 - 跳过的任务
+        if let Some(collector) = &stats_collector {
+            collector.lock().unwrap().skipped += 1;
+        }
+
         return Ok(());
     }
 
@@ -116,7 +137,7 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
     // 更新任务状态
     task.complete(result);
 
-    // 更新 UI 或打印日志
+    // 更新 UI 或打印日志并收集统计
     if let Some(ui) = &ui {
         let mut ui_guard = ui.lock().unwrap();
         if task.is_success() {
@@ -151,6 +172,15 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
                     Logger::error(tf!("executor.task_stderr", &task_result.stderr));
                 }
             }
+        }
+    }
+
+    // 更新统计 - 成功或失败的任务
+    if let Some(collector) = &stats_collector {
+        if task.is_success() {
+            collector.lock().unwrap().successful += 1;
+        } else {
+            collector.lock().unwrap().failed += 1;
         }
     }
 
@@ -310,6 +340,10 @@ impl TaskExecutor {
     ) -> Result<()> {
         let verbose = self.config.verbose;
 
+        // 在 verbose 模式下，我们需要收集执行统计信息
+        let stats_collector =
+            if verbose { Some(Arc::new(Mutex::new(ExecutionStats::default()))) } else { None };
+
         // 非 verbose 模式下使用 UI 渲染
         let ui = if !verbose {
             let runner_ui = RunnerUI::new(false, true);
@@ -334,6 +368,13 @@ impl TaskExecutor {
             None
         };
 
+        // 计算总任务数
+        if let Some(collector) = &stats_collector {
+            let total_tasks: usize = stages.iter().map(|stage| stage.len()).sum();
+            collector.lock().unwrap().total = total_tasks;
+            collector.lock().unwrap().start_time = Some(Instant::now());
+        }
+
         // 执行阶段
         for (stage_idx, stage) in stages.iter().enumerate() {
             if let Some(ui) = &ui {
@@ -347,21 +388,25 @@ impl TaskExecutor {
                 drop(ui_lock); // 释放锁
             }
 
-            self.execute_single_stage(stage, command, ui.clone()).await?;
+            self.execute_single_stage(stage, command, ui.clone(), stats_collector.clone()).await?;
         }
 
         // 显示执行总结
         if let Some(ui) = &ui {
             ui.lock().unwrap().render_summary();
         } else if verbose {
-            // verbose 模式下显示完整汇总
-            use crate::ui::summary::render_execution_summary;
+            if let Some(collector) = &stats_collector {
+                let stats = collector.lock().unwrap();
 
-            // 统计任务总数（在verbose模式下，假设都执行成功了）
-            let total_tasks: usize = stages.iter().map(|stage| stage.len()).sum();
-
-            // 调用完整的汇总渲染函数
-            render_execution_summary(total_tasks, total_tasks, 0, 0, None);
+                // 调用完整的汇总渲染函数，使用真实收集的数据
+                render_execution_summary(
+                    stats.total,
+                    stats.successful,
+                    stats.failed,
+                    stats.skipped,
+                    None,
+                );
+            }
         }
 
         Ok(())
@@ -373,6 +418,7 @@ impl TaskExecutor {
         stage: &Vec<WorkspacePackage>,
         command: &str,
         ui: Option<Arc<Mutex<RunnerUI>>>,
+        stats_collector: Option<Arc<Mutex<ExecutionStats>>>,
     ) -> Result<()> {
         if stage.is_empty() {
             return Ok(());
@@ -387,7 +433,7 @@ impl TaskExecutor {
                 command.to_string(),
                 vec![],
             );
-            return execute_task(&mut task, ui).await;
+            return execute_task(&mut task, ui, stats_collector).await;
         }
 
         // 多个包时使用并发执行
@@ -420,9 +466,11 @@ impl TaskExecutor {
                     vec![],
                 );
 
-                // 克隆 UI 引用用于异步任务
+                // 克隆 UI 引用和统计收集器用于异步任务
                 let ui_clone = ui.clone();
-                let task_future = async move { execute_task(&mut task, ui_clone).await };
+                let stats_clone = stats_collector.clone();
+                let task_future =
+                    async move { execute_task(&mut task, ui_clone, stats_clone).await };
 
                 (task_id, task_future)
             })
@@ -434,8 +482,10 @@ impl TaskExecutor {
                 .block_on(async { scheduler.execute_batch(tasks).await })
         });
 
-        // 处理执行结果
+        // 处理执行结果并收集统计
         let mut success_count = 0;
+        let mut failed_count = 0;
+        let mut cancelled_count = 0;
         let mut failed_tasks = Vec::new();
 
         for (task_id, result) in results {
@@ -445,17 +495,36 @@ impl TaskExecutor {
                     if self.config.verbose {
                         Logger::success(tf!("executor.task_concurrent_success", &task_id));
                     }
+
+                    // 更新统计
+                    if let Some(collector) = &stats_collector {
+                        collector.lock().unwrap().successful += 1;
+                    }
                 }
                 SchedulerTaskResult::Failed(err) => {
+                    failed_count += 1;
                     failed_tasks.push(format!("{}: {}", task_id, err));
                     Logger::error(tf!("executor.task_concurrent_failed", &task_id, &err));
+
+                    // 更新统计
+                    if let Some(collector) = &stats_collector {
+                        collector.lock().unwrap().failed += 1;
+                    }
                 }
                 SchedulerTaskResult::Timeout => {
+                    failed_count += 1;
                     failed_tasks.push(format!("{}: 执行超时", task_id));
                     Logger::error(tf!("executor.task_concurrent_timeout", &task_id));
+
+                    // 更新统计
+                    if let Some(collector) = &stats_collector {
+                        collector.lock().unwrap().failed += 1;
+                    }
                 }
                 SchedulerTaskResult::Cancelled => {
+                    cancelled_count += 1;
                     Logger::warn(tf!("executor.task_concurrent_cancelled", &task_id));
+                    // 取消的任务不计入统计中
                 }
             }
         }

@@ -5,19 +5,20 @@
 // 文件: src/models/task.rs
 // 职责: 任务执行相关的数据结构定义
 // 边界:
-//   - ✅ 任务信息数据结构定义
-//   - ✅ 任务状态枚举定义
-//   - ✅ 执行结果数据结构定义
-//   - ✅ 任务配置数据结构定义
-//   - ❌ 不应包含任务执行逻辑
-//   - ❌ 不应包含任务调度逻辑
-//   - ❌ 不应包含 CLI 相关逻辑
-//   - ❌ 不应包含文件操作逻辑
+//   - 任务信息数据结构定义
+//   - 任务状态枚举定义
+//   - 执行结果数据结构定义
+//   - 任务配置数据结构定义
+//   - 不应包含任务执行逻辑
+//   - 不应包含任务调度逻辑
+//   - 不应包含 CLI 相关逻辑
+//   - 不应包含文件操作逻辑
 //
 // ============================================================================
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 use std::time::{Duration, SystemTime};
 
 use crate::models::config::Config;
@@ -36,6 +37,18 @@ pub enum TaskStatus {
     Failed,
     /// 已跳过
     Skipped,
+}
+
+impl fmt::Display for TaskStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TaskStatus::Pending => write!(f, "Pending"),
+            TaskStatus::Running => write!(f, "Running"),
+            TaskStatus::Success => write!(f, "Success"),
+            TaskStatus::Failed => write!(f, "Failed"),
+            TaskStatus::Skipped => write!(f, "Skipped"),
+        }
+    }
 }
 
 /// 任务信息
