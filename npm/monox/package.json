@@ -32,12 +32,7 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
-  "bin": {
-    "monox": "bin/monox"
-  },
   "files": [
-    "install.js",
-    "bin/monox",
     "README.md",
     "README.zh.md",
     "LICENSE"
