@@ -57,6 +57,15 @@ function installBinary() {
     // 首先尝试从已安装的平台特定包中找到二进制文件
     const binaryPath = require.resolve(`${packageName}/monox`);
     console.log(`[monox] Found platform package: ${packageName}`);
+    
+    // 设置执行权限
+    try {
+      fs.chmodSync(binaryPath, 0o755);
+      console.log(`[monox] Set executable permissions for ${binaryPath}`);
+    } catch (chmodError) {
+      console.warn(`[monox] Warning: Could not set permissions: ${chmodError.message}`);
+    }
+    
     return;
   } catch (error) {
     console.warn(`[monox] Platform package "${packageName}" not found.`);
@@ -75,7 +84,16 @@ function installBinary() {
       });
       
       // 验证安装是否成功
-      require.resolve(`${packageName}/monox`);
+      const installedBinaryPath = require.resolve(`${packageName}/monox`);
+      
+      // 设置执行权限
+      try {
+        fs.chmodSync(installedBinaryPath, 0o755);
+        console.log(`[monox] Set executable permissions for ${installedBinaryPath}`);
+      } catch (chmodError) {
+        console.warn(`[monox] Warning: Could not set permissions: ${chmodError.message}`);
+      }
+      
       console.log(`[monox] Successfully installed ${packageName}`);
     } catch (installError) {
       console.error(`[monox] Failed to install ${packageName}: ${installError.message}`);
