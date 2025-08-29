@@ -95,10 +95,7 @@ pub struct HealthChecker {
 impl HealthChecker {
     /// 创建新的健康检查器
     pub fn new(workspace_root: std::path::PathBuf) -> Self {
-        Self {
-            workspace_root,
-            verbose: false,
-        }
+        Self { workspace_root, verbose: false }
     }
 
     /// 设置详细模式
@@ -155,9 +152,8 @@ impl HealthChecker {
             }) as ProgressCallback
         });
 
-        let outdated_deps = self
-            .check_outdated_with_scheduler(unique_dependencies, wrapped_callback)
-            .await?;
+        let outdated_deps =
+            self.check_outdated_with_scheduler(unique_dependencies, wrapped_callback).await?;
 
         Ok((outdated_deps, total_deps))
     }
@@ -214,10 +210,7 @@ impl HealthChecker {
 
         for package_file in package_files {
             let package_json = parse_package_json(package_file)?;
-            let package_name = package_json["name"]
-                .as_str()
-                .unwrap_or("unknown")
-                .to_string();
+            let package_name = package_json["name"].as_str().unwrap_or("unknown").to_string();
 
             process_package_dependencies(&package_json, &package_name, &mut unique_dependencies);
         }
@@ -280,10 +273,7 @@ impl HealthChecker {
         // 收集所有依赖使用情况
         for package_file in package_files {
             let package_json = parse_package_json(package_file)?;
-            let package_name = package_json["name"]
-                .as_str()
-                .unwrap_or("unknown")
-                .to_string();
+            let package_name = package_json["name"].as_str().unwrap_or("unknown").to_string();
 
             collect_dependency_usages(&package_json, &package_name, &mut dependency_usages);
         }
@@ -345,9 +335,7 @@ fn add_or_update_dependency(
     unique_dependencies
         .entry(dep_name.to_string())
         .and_modify(|dep_info| {
-            dep_info
-                .used_by
-                .push((package_name.to_string(), dep_type.to_string()));
+            dep_info.used_by.push((package_name.to_string(), dep_type.to_string()));
         })
         .or_insert_with(|| DependencyInfo {
             name: dep_name.to_string(),
@@ -387,10 +375,8 @@ fn is_version_satisfied(current: &str, latest: &str) -> bool {
 async fn get_latest_version_async(package_name: &str) -> Result<Option<String>> {
     use tokio::process::Command;
 
-    let output = Command::new("npm")
-        .args(&["view", package_name, "version", "--json"])
-        .output()
-        .await?;
+    let output =
+        Command::new("npm").args(&["view", package_name, "version", "--json"]).output().await?;
 
     if !output.status.success() {
         return Ok(None);
@@ -415,9 +401,7 @@ async fn get_latest_version_async(package_name: &str) -> Result<Option<String>> 
 
 /// 计算最优线程数
 fn calculate_optimal_thread_count(dependency_count: usize) -> usize {
-    let cpu_count = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(4);
+    let cpu_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
 
     let optimal_threads = match dependency_count {
         0..=10 => std::cmp::min(dependency_count, 2),
@@ -435,10 +419,7 @@ fn create_outdated_check_tasks(
     outdated_deps: Arc<Mutex<Vec<OutdatedDependency>>>,
     found_packages: Arc<Mutex<std::collections::HashSet<String>>>,
     verbose: bool,
-) -> Vec<(
-    String,
-    std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send>>,
-)> {
+) -> Vec<(String, std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send>>)> {
     unique_dependencies
         .into_iter()
         .map(|(dep_name, dep_info)| {
@@ -528,10 +509,7 @@ fn collect_dependency_usages(
                     dep_type: dep_type.to_string(),
                 };
 
-                dependency_usages
-                    .entry(dep_name.clone())
-                    .or_default()
-                    .push(usage);
+                dependency_usages.entry(dep_name.clone()).or_default().push(usage);
             }
         }
     }
@@ -568,26 +546,18 @@ fn find_version_conflicts(
 fn group_by_version(usages: &[ConflictUsage]) -> HashMap<String, Vec<&ConflictUsage>> {
     let mut unique_versions: HashMap<String, Vec<&ConflictUsage>> = HashMap::new();
     for usage in usages {
-        unique_versions
-            .entry(usage.resolved_version.clone())
-            .or_default()
-            .push(usage);
+        unique_versions.entry(usage.resolved_version.clone()).or_default().push(usage);
     }
     unique_versions
 }
 
 /// 计算推荐的统一版本
 fn calculate_recommended_version(usages: &[ConflictUsage]) -> String {
-    let mut versions: Vec<String> = usages
-        .iter()
-        .map(|usage| usage.resolved_version.clone())
-        .collect();
+    let mut versions: Vec<String> =
+        usages.iter().map(|usage| usage.resolved_version.clone()).collect();
 
     versions.sort();
     versions.dedup();
 
-    versions
-        .last()
-        .cloned()
-        .unwrap_or_else(|| "unknown".to_string())
+    versions.last().cloned().unwrap_or_else(|| "unknown".to_string())
 }

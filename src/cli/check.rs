@@ -125,12 +125,9 @@ fn check_circular_dependencies(
 
     Logger::error(tf!("check.circular.found", circular_dependencies.len()));
 
-    output_results(
-        &args.format,
-        &circular_dependencies,
-        args.detail,
-        |deps, detail| summary::print_circular_dependencies_table(deps, detail),
-    )?;
+    output_results(&args.format, &circular_dependencies, args.detail, |deps, detail| {
+        summary::print_circular_dependencies_table(deps, detail)
+    })?;
 
     Ok(true)
 }
@@ -172,12 +169,9 @@ fn check_version_conflicts(
         })
         .collect();
 
-    output_results(
-        &args.format,
-        &summary_conflicts,
-        args.detail,
-        |conflicts, detail| summary::print_version_conflicts_table(conflicts, detail),
-    )?;
+    output_results(&args.format, &summary_conflicts, args.detail, |conflicts, detail| {
+        summary::print_version_conflicts_table(conflicts, detail)
+    })?;
 
     Ok(true)
 }
@@ -223,9 +217,8 @@ async fn check_outdated_dependencies(
     };
 
     // 执行检查
-    let (result, total_checked) = checker
-        .check_outdated_dependencies_with_progress(progress_callback)
-        .await?;
+    let (result, total_checked) =
+        checker.check_outdated_dependencies_with_progress(progress_callback).await?;
 
     // 停止进度显示
     if let Some(spinner_arc) = spinner {
@@ -254,12 +247,9 @@ async fn check_outdated_dependencies(
         })
         .collect();
 
-    output_results(
-        &args.format,
-        &summary_outdated,
-        args.detail,
-        |deps, detail| summary::print_outdated_dependencies_table(deps, detail),
-    )?;
+    output_results(&args.format, &summary_outdated, args.detail, |deps, detail| {
+        summary::print_outdated_dependencies_table(deps, detail)
+    })?;
 
     // 在汇总表格之后打印数量信息，确保用户能看到
     log_outdated_found_message_with_total(
@@ -290,11 +280,7 @@ where
 
 /// 获取唯一过期包数量
 fn get_unique_outdated_count(result: &[OutdatedDependency]) -> usize {
-    result
-        .iter()
-        .map(|dep| &dep.name)
-        .collect::<std::collections::HashSet<_>>()
-        .len()
+    result.iter().map(|dep| &dep.name).collect::<std::collections::HashSet<_>>().len()
 }
 
 /// 记录过期依赖检查结果（包含总检测数量）
@@ -308,11 +294,7 @@ fn log_outdated_found_message_with_total(
         Logger::success(tf!("check.outdated.summary_clean", total_checked));
     } else if unique_count == instance_count {
         // 发现过期依赖，没有重复引用的情况，使用错误提示
-        Logger::error(tf!(
-            "check.outdated.found_with_total",
-            total_checked,
-            unique_count
-        ));
+        Logger::error(tf!("check.outdated.found_with_total", total_checked, unique_count));
     } else {
         // 发现过期依赖，有重复引用的情况，使用错误提示
         Logger::error(tf!(

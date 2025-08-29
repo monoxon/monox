@@ -53,10 +53,7 @@ pub struct DependencyAnalyzer {
 impl DependencyAnalyzer {
     /// 创建新的依赖分析器
     pub fn new(workspace_root: PathBuf) -> Self {
-        Self {
-            workspace_root,
-            verbose: false,
-        }
+        Self { workspace_root, verbose: false }
     }
 
     /// 启用详细日志
@@ -70,10 +67,7 @@ impl DependencyAnalyzer {
         let start_time = Instant::now();
 
         if self.verbose {
-            Logger::info(tf!(
-                "analyze.scanning_workspace",
-                self.workspace_root.display()
-            ));
+            Logger::info(tf!("analyze.scanning_workspace", self.workspace_root.display()));
         }
 
         // 1. 扫描所有包
@@ -120,12 +114,7 @@ impl DependencyAnalyzer {
             Logger::info(tf!("analyze.completed", analysis_duration, stages.len()));
         }
 
-        Ok(DependencyAnalysisResult {
-            packages,
-            stages,
-            circular_dependencies,
-            statistics,
-        })
+        Ok(DependencyAnalysisResult { packages, stages, circular_dependencies, statistics })
     }
 
     /// 扫描工作区中的所有包
@@ -133,10 +122,8 @@ impl DependencyAnalyzer {
         let mut packages = Vec::new();
 
         // 使用 walkdir 遍历目录
-        for entry in WalkDir::new(&self.workspace_root)
-            .follow_links(false)
-            .into_iter()
-            .filter_entry(|e| {
+        for entry in
+            WalkDir::new(&self.workspace_root).follow_links(false).into_iter().filter_entry(|e| {
                 let relative_path = e
                     .path()
                     .strip_prefix(&self.workspace_root)
@@ -194,16 +181,11 @@ impl DependencyAnalyzer {
             .ok_or_else(|| anyhow::anyhow!(t!("error.get_package_dir")))?;
 
         // 计算相对路径
-        let relative_path = package_dir
-            .strip_prefix(&self.workspace_root)
-            .unwrap_or(package_dir)
-            .to_path_buf();
+        let relative_path =
+            package_dir.strip_prefix(&self.workspace_root).unwrap_or(package_dir).to_path_buf();
 
         // 使用目录名作为后备包名
-        let fallback_name = package_dir
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown");
+        let fallback_name = package_dir.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
 
         let package = WorkspacePackage::new(
             package_json.get_name(fallback_name),
@@ -280,10 +262,8 @@ impl DependencyAnalyzer {
         for scc in sccs {
             // 只有包含多个节点的强连通分量才是循环依赖
             if scc.len() > 1 {
-                let cycle: Vec<String> = scc
-                    .iter()
-                    .map(|&node_idx| graph[node_idx].clone())
-                    .collect();
+                let cycle: Vec<String> =
+                    scc.iter().map(|&node_idx| graph[node_idx].clone()).collect();
                 circular_deps.push(cycle);
             }
         }
@@ -303,10 +283,8 @@ impl DependencyAnalyzer {
         let mut stages = Vec::new();
 
         // 创建包名到包的映射
-        let package_map: HashMap<String, WorkspacePackage> = packages
-            .iter()
-            .map(|p| (p.name.clone(), p.clone()))
-            .collect();
+        let package_map: HashMap<String, WorkspacePackage> =
+            packages.iter().map(|p| (p.name.clone(), p.clone())).collect();
 
         // 未分配到阶段的包
         let mut unstaged_packages: HashSet<String> =
@@ -337,10 +315,7 @@ impl DependencyAnalyzer {
                 if self.verbose {
                     let remaining_packages: Vec<String> =
                         unstaged_packages.iter().cloned().collect();
-                    Logger::info(tf!(
-                        "analyze.circular_warning",
-                        remaining_packages.join(", ")
-                    ));
+                    Logger::info(tf!("analyze.circular_warning", remaining_packages.join(", ")));
                 }
                 break;
             }
@@ -355,11 +330,7 @@ impl DependencyAnalyzer {
                     "analyze.stage_info",
                     stages.len() + 1,
                     current_stage.len(),
-                    current_stage
-                        .iter()
-                        .map(|p| p.name.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
+                    current_stage.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")
                 ));
             }
 
@@ -438,11 +409,7 @@ impl DependencyAnalyzer {
         };
 
         if self.verbose {
-            Logger::info(tf!(
-                "analyze.single_package_completed",
-                package_name,
-                analysis_duration
-            ));
+            Logger::info(tf!("analyze.single_package_completed", package_name, analysis_duration));
         }
 
         // 6. 返回结果（只包含目标包，但保留完整的依赖上下文）
@@ -513,10 +480,7 @@ impl DependencyAnalyzer {
         let start_time = Instant::now();
 
         if self.verbose {
-            Logger::info(tf!(
-                "analyze.multi_packages_start",
-                package_names.join(", ")
-            ));
+            Logger::info(tf!("analyze.multi_packages_start", package_names.join(", ")));
         }
 
         // 1. 执行完整的工作区分析以获得正确的依赖关系
@@ -536,11 +500,7 @@ impl DependencyAnalyzer {
 
         if self.verbose {
             for pkg in &target_packages {
-                Logger::info(tf!(
-                    "analyze.multi_package_found",
-                    &pkg.name,
-                    pkg.folder.display()
-                ));
+                Logger::info(tf!("analyze.multi_package_found", &pkg.name, pkg.folder.display()));
             }
         }
 
@@ -575,10 +535,7 @@ impl DependencyAnalyzer {
         } else {
             // 检查循环依赖是否涉及任何目标包
             let targets_in_cycle = target_packages.iter().any(|target| {
-                full_result
-                    .circular_dependencies
-                    .iter()
-                    .any(|cycle| cycle.contains(&target.name))
+                full_result.circular_dependencies.iter().any(|cycle| cycle.contains(&target.name))
             });
 
             if targets_in_cycle {

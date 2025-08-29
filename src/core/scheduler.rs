@@ -85,10 +85,7 @@ impl std::fmt::Debug for SchedulerConfig {
             .field("fail_fast", &self.fail_fast)
             .field("verbose", &self.verbose)
             .field("has_progress_callback", &self.progress_callback.is_some())
-            .field(
-                "has_task_completed_callback",
-                &self.task_completed_callback.is_some(),
-            )
+            .field("has_task_completed_callback", &self.task_completed_callback.is_some())
             .finish()
     }
 }
@@ -217,11 +214,7 @@ impl AsyncTaskScheduler {
             let duration = start_time.elapsed();
             match &result {
                 TaskResult::Success(_) => {
-                    Logger::info(tf!(
-                        "scheduler.task_success",
-                        &task_id,
-                        duration.as_secs_f64()
-                    ));
+                    Logger::info(tf!("scheduler.task_success", &task_id, duration.as_secs_f64()));
                 }
                 TaskResult::Failed(err) => {
                     Logger::error(tf!(
@@ -232,11 +225,7 @@ impl AsyncTaskScheduler {
                     ));
                 }
                 TaskResult::Timeout => {
-                    Logger::warn(tf!(
-                        "scheduler.task_timeout",
-                        &task_id,
-                        duration.as_secs_f64()
-                    ));
+                    Logger::warn(tf!("scheduler.task_timeout", &task_id, duration.as_secs_f64()));
                 }
                 TaskResult::Cancelled => {
                     Logger::warn(tf!("scheduler.task_cancelled", &task_id));
@@ -317,9 +306,7 @@ impl AsyncTaskScheduler {
         let results = self.execute_batch(dependencies).await;
 
         // 转换为 HashMap 便于查找
-        results
-            .into_iter()
-            .collect::<HashMap<String, TaskResult<()>>>()
+        results.into_iter().collect::<HashMap<String, TaskResult<()>>>()
     }
 
     /// 获取任务状态快照
@@ -334,11 +321,7 @@ impl AsyncTaskScheduler {
 
     /// 检查是否有任务正在运行
     pub async fn has_running_tasks(&self) -> bool {
-        self.task_status
-            .read()
-            .await
-            .values()
-            .any(|status| !status.is_completed)
+        self.task_status.read().await.values().any(|status| !status.is_completed)
     }
 
     /// 停止所有正在执行的任务
@@ -392,10 +375,7 @@ impl AsyncTaskScheduler {
             is_success: false,
         };
 
-        self.task_status
-            .write()
-            .await
-            .insert(task_id.to_string(), status);
+        self.task_status.write().await.insert(task_id.to_string(), status);
     }
 
     /// 记录任务完成

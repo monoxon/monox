@@ -323,7 +323,7 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("runner.successful_tasks", "Successful tasks: {}"),
     ("runner.failed_tasks", "Failed tasks: {}"),
     ("runner.skipped_tasks", "Skipped tasks: {}"),
-            ("runner.processing_packages", "Processing packages:"),
-        ("runner.more_packages", "  ... {} more packages"),
-        ("runner.stage_complete", "All stages completed {}/{}"),
+    ("runner.processing_packages", "Processing packages:"),
+    ("runner.more_packages", "  ... {} more packages"),
+    ("runner.stage_complete", "All stages completed {}/{}"),
 ];

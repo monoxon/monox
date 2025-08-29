@@ -178,9 +178,7 @@ async fn create_update_plan_for_all(
     let workspace_root = Config::get_workspace_root();
     let checker = HealthChecker::new(workspace_root).with_verbose(verbose);
 
-    let (outdated_deps, _) = checker
-        .check_outdated_dependencies_with_progress(None)
-        .await?;
+    let (outdated_deps, _) = checker.check_outdated_dependencies_with_progress(None).await?;
 
     let mut updates = Vec::new();
     for outdated_dep in outdated_deps {
@@ -225,10 +223,7 @@ async fn create_update_plan_for_dependency(
         let content = fs::read_to_string(package_file)?;
         let package_json: serde_json::Value = serde_json::from_str(&content)?;
 
-        let package_name = package_json["name"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string();
+        let package_name = package_json["name"].as_str().unwrap_or("unknown").to_string();
 
         // 检查所有依赖类型
         let dep_types = ["dependencies", "devDependencies", "peerDependencies"];
@@ -268,10 +263,8 @@ async fn create_update_plan_for_dependency(
 async fn get_latest_version_async(package_name: &str) -> Result<Option<String>> {
     use tokio::process::Command;
 
-    let output = Command::new("npm")
-        .args(&["view", package_name, "version", "--json"])
-        .output()
-        .await?;
+    let output =
+        Command::new("npm").args(&["view", package_name, "version", "--json"]).output().await?;
 
     if !output.status.success() {
         return Ok(None);
@@ -328,10 +321,7 @@ fn display_update_plan(updates: &[UpdateResult]) -> Result<()> {
     // 按包分组显示
     let mut packages: HashMap<String, Vec<&UpdateResult>> = HashMap::new();
     for update in updates {
-        packages
-            .entry(update.package.clone())
-            .or_default()
-            .push(update);
+        packages.entry(update.package.clone()).or_default().push(update);
     }
 
     for (package_name, package_updates) in packages {
@@ -339,12 +329,7 @@ fn display_update_plan(updates: &[UpdateResult]) -> Result<()> {
         for update in package_updates {
             let old_version = Colors::red(&update.old_version);
             let new_version = Colors::green(&update.new_version);
-            Logger::info(tf!(
-                "update.update_simple",
-                update.dependency,
-                old_version,
-                new_version
-            ));
+            Logger::info(tf!("update.update_simple", update.dependency, old_version, new_version));
         }
         Logger::info("");
     }
@@ -375,10 +360,7 @@ fn execute_updates(
     // 按包分组执行更新
     let mut packages: HashMap<String, Vec<&UpdateResult>> = HashMap::new();
     for update in updates {
-        packages
-            .entry(update.package.clone())
-            .or_default()
-            .push(update);
+        packages.entry(update.package.clone()).or_default().push(update);
     }
 
     for (package_name, package_updates) in packages {
@@ -457,10 +439,7 @@ fn display_update_results(results: &[UpdateResult]) -> Result<()> {
     // 按包分组显示结果
     let mut packages: HashMap<String, Vec<&UpdateResult>> = HashMap::new();
     for result in results {
-        packages
-            .entry(result.package.clone())
-            .or_default()
-            .push(result);
+        packages.entry(result.package.clone()).or_default().push(result);
     }
 
     for (package_name, package_results) in packages {
@@ -468,12 +447,7 @@ fn display_update_results(results: &[UpdateResult]) -> Result<()> {
         for result in package_results {
             let old_version = Colors::red(&result.old_version);
             let new_version = Colors::green(&result.new_version);
-            Logger::info(tf!(
-                "update.result_detail",
-                result.dependency,
-                old_version,
-                new_version
-            ));
+            Logger::info(tf!("update.result_detail", result.dependency, old_version, new_version));
         }
         Logger::info("");
     }

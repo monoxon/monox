@@ -163,11 +163,7 @@ impl PackageManager {
 
     /// 获取所有支持的包管理器
     pub fn all() -> &'static [PackageManager] {
-        &[
-            PackageManager::Pnpm,
-            PackageManager::Yarn,
-            PackageManager::Npm,
-        ]
+        &[PackageManager::Pnpm, PackageManager::Yarn, PackageManager::Npm]
     }
 }
 
@@ -268,9 +264,8 @@ impl Config {
 
     /// 合并运行时参数
     pub fn merge_runtime_args(args: RuntimeArgs) -> anyhow::Result<()> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let mut config = global_config
             .write()
@@ -364,9 +359,8 @@ impl Config {
 
     /// 从配置获取工作区根目录（可能失败）
     fn get_workspace_root_from_config() -> anyhow::Result<PathBuf> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -382,9 +376,8 @@ impl Config {
 
     /// 获取忽略模式列表
     pub fn get_ignore_patterns() -> anyhow::Result<Vec<String>> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -424,9 +417,8 @@ impl Config {
 
     /// 获取界面语言
     pub fn get_language() -> anyhow::Result<String> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -445,9 +437,8 @@ impl Config {
 
     /// 从配置获取最大并发数（可能失败）
     fn get_max_concurrency_from_config() -> anyhow::Result<usize> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -458,9 +449,8 @@ impl Config {
 
     /// 获取任务超时时间
     pub fn get_task_timeout() -> anyhow::Result<u32> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -471,9 +461,8 @@ impl Config {
 
     /// 获取重试次数
     pub fn get_retry_count() -> anyhow::Result<u32> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -484,9 +473,8 @@ impl Config {
 
     /// 获取失败时是否继续执行
     pub fn get_continue_on_failure() -> anyhow::Result<bool> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -497,9 +485,8 @@ impl Config {
 
     /// 获取是否显示进度条
     pub fn get_show_progress() -> anyhow::Result<bool> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -518,9 +505,8 @@ impl Config {
 
     /// 从配置获取详细输出设置（可能失败）
     fn get_verbose_from_config() -> anyhow::Result<bool> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -531,9 +517,8 @@ impl Config {
 
     /// 获取是否彩色输出
     pub fn get_colored() -> anyhow::Result<bool> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -552,9 +537,8 @@ impl Config {
 
     /// 从配置获取包管理器（可能失败）
     fn get_package_manager_from_config() -> anyhow::Result<PackageManager> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -565,9 +549,8 @@ impl Config {
 
     /// 获取任务配置
     pub fn get_task_config(task_name: &str) -> anyhow::Result<TaskConfig> {
-        let global_config = GLOBAL_CONFIG
-            .get()
-            .ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
+        let global_config =
+            GLOBAL_CONFIG.get().ok_or_else(|| anyhow::anyhow!("Global config not initialized"))?;
 
         let config = global_config
             .read()
@@ -602,9 +585,7 @@ impl Default for Config {
                 verbose: Self::default_verbose(),
                 colored: Self::default_colored(),
             },
-            i18n: I18nConfig {
-                language: Self::default_language(),
-            },
+            i18n: I18nConfig { language: Self::default_language() },
         }
     }
 }
@@ -642,8 +623,6 @@ impl Default for OutputConfig {
 
 impl Default for I18nConfig {
     fn default() -> Self {
-        Self {
-            language: Config::default_language(),
-        }
+        Self { language: Config::default_language() }
     }
 }

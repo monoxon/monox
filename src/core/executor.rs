@@ -50,17 +50,12 @@ async fn run_command(task: &Task) -> Result<TaskResult> {
         .stderr(Stdio::piped());
 
     if Config::get_verbose() {
-        Logger::info(tf!(
-            "executor.command_run",
-            &task.command,
-            task.args.join(" ")
-        ));
+        Logger::info(tf!("executor.command_run", &task.command, task.args.join(" ")));
     }
 
     // 执行命令
-    let output = command
-        .output()
-        .context(tf!("executor.command_failed", command_str).to_string())?;
+    let output =
+        command.output().context(tf!("executor.command_failed", command_str).to_string())?;
 
     let duration = start_time.elapsed();
     let exit_code = output.status.code().unwrap_or(-1);
@@ -97,11 +92,7 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
         let mut ui_guard = ui.lock().unwrap();
         ui_guard.start_task(&task_id);
     } else if Config::get_verbose() {
-        Logger::info(tf!(
-            "executor.task_start",
-            &task.package_name,
-            &task.command
-        ));
+        Logger::info(tf!("executor.task_start", &task.package_name, &task.command));
     }
 
     // 开始执行
@@ -112,11 +103,7 @@ async fn execute_task(task: &mut Task, ui: Option<Arc<Mutex<RunnerUI>>>) -> Resu
             let mut ui_guard = ui.lock().unwrap();
             ui_guard.skip_task(&task_id, Some(t!("executor.script_not_exist")));
         } else if Config::get_verbose() {
-            Logger::warn(tf!(
-                "executor.task_skipped",
-                &task.package_name,
-                &task.command
-            ));
+            Logger::warn(tf!("executor.task_skipped", &task.package_name, &task.command));
         }
         return Ok(());
     }
@@ -240,11 +227,7 @@ impl TaskExecutor {
             .filter(|pkg| pkg.scripts.contains_key(command))
             .count();
 
-        Logger::info(tf!(
-            "run.found_executable_packages",
-            executable_count,
-            command
-        ));
+        Logger::info(tf!("run.found_executable_packages", executable_count, command));
 
         self.execute_stages(&analysis_result.stages, command).await
     }
@@ -280,11 +263,7 @@ impl TaskExecutor {
             anyhow::bail!(tf!("run.no_executable_packages", command));
         }
 
-        Logger::info(tf!(
-            "run.found_executable_packages",
-            executable_packages.len(),
-            command
-        ));
+        Logger::info(tf!("run.found_executable_packages", executable_packages.len(), command));
 
         self.execute_stages(&analysis_result.stages, command).await
     }
@@ -318,11 +297,7 @@ impl TaskExecutor {
             .filter(|pkg| pkg.scripts.contains_key(command))
             .count();
 
-        Logger::info(tf!(
-            "run.found_executable_packages",
-            executable_count,
-            command
-        ));
+        Logger::info(tf!("run.found_executable_packages", executable_count, command));
 
         self.execute_stages(&analysis_result.stages, command).await
     }
@@ -350,9 +325,7 @@ impl TaskExecutor {
             for stage in stages {
                 for package in stage {
                     let task_id = format!("{}:{}", package.name, command);
-                    ui.lock()
-                        .unwrap()
-                        .add_task(task_id, command.to_string(), package.name.clone());
+                    ui.lock().unwrap().add_task(task_id, command.to_string(), package.name.clone());
                 }
             }
 
@@ -374,8 +347,7 @@ impl TaskExecutor {
                 drop(ui_lock); // 释放锁
             }
 
-            self.execute_single_stage(stage, command, ui.clone())
-                .await?;
+            self.execute_single_stage(stage, command, ui.clone()).await?;
         }
 
         // 显示执行总结
@@ -426,10 +398,7 @@ impl TaskExecutor {
         // 创建调度器配置
         let scheduler_config = SchedulerConfig {
             max_concurrency: self.config.max_concurrency,
-            timeout: self
-                .config
-                .timeout_seconds
-                .map(|s| Duration::from_secs(s as u64)),
+            timeout: self.config.timeout_seconds.map(|s| Duration::from_secs(s as u64)),
             fail_fast: !self.config.continue_on_error,
             verbose: self.config.verbose,
             progress_callback: None,
@@ -492,11 +461,7 @@ impl TaskExecutor {
         }
 
         if self.config.verbose {
-            Logger::info(tf!(
-                "executor.stage_concurrent_complete",
-                success_count,
-                stage.len()
-            ));
+            Logger::info(tf!("executor.stage_concurrent_complete", success_count, stage.len()));
         }
 
         // 如果有失败任务且不允许继续执行，则返回错误

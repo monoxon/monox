@@ -65,11 +65,8 @@ pub fn handle_analyze(args: AnalyzeArgs) -> Result<()> {
     let result = if let Some(packages) = args.packages {
         // 多包分析
         // 过滤掉空字符串和只有空白字符的字符串
-        let packages: Vec<String> = packages
-            .into_iter()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
+        let packages: Vec<String> =
+            packages.into_iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
 
         if packages.is_empty() {
             anyhow::bail!(t!("analyze.empty_packages_list"));
@@ -108,11 +105,7 @@ fn print_table_format(
     detail: bool,
 ) {
     // 使用像素图标而不是 emoji
-    Logger::info(format!(
-        "\n{} {}",
-        icons::ANALYZE,
-        t!("output.analysis_result")
-    ));
+    Logger::info(format!("\n{} {}", icons::ANALYZE, t!("output.analysis_result")));
     Logger::info("═══════════════════════════════════════");
 
     // 统计信息
@@ -122,18 +115,11 @@ fn print_table_format(
         icons::PACKAGE,
         tf!("output.total_packages", stats.total_packages)
     ));
-    Logger::info(format!(
-        "{} {}",
-        icons::STAGE,
-        tf!("output.total_stages", stats.total_stages)
-    ));
+    Logger::info(format!("{} {}", icons::STAGE, tf!("output.total_stages", stats.total_stages)));
     Logger::info(format!(
         "{} {}",
         icons::DEPENDENCY,
-        tf!(
-            "output.packages_with_deps",
-            stats.packages_with_workspace_deps
-        )
+        tf!("output.packages_with_deps", stats.packages_with_workspace_deps)
     ));
     Logger::info(format!(
         "{} {}",
@@ -143,21 +129,13 @@ fn print_table_format(
 
     // 循环依赖检查
     if !result.circular_dependencies.is_empty() {
-        Logger::info(format!(
-            "\n{} {}",
-            icons::ERROR,
-            t!("output.circular_dependencies")
-        ));
+        Logger::info(format!("\n{} {}", icons::ERROR, t!("output.circular_dependencies")));
         Logger::info("───────────────────────────────────────");
         for (i, cycle) in result.circular_dependencies.iter().enumerate() {
             Logger::info(format!("{}. {}", i + 1, cycle.join(" → ")));
         }
     } else {
-        Logger::info(format!(
-            "\n{} {}",
-            icons::SUCCESS,
-            t!("output.no_circular_dependencies")
-        ));
+        Logger::info(format!("\n{} {}", icons::SUCCESS, t!("output.no_circular_dependencies")));
     }
 
     // 构建阶段
@@ -182,10 +160,7 @@ fn print_table_format(
                             "  {} {} ({})",
                             icons::PACKAGE,
                             package.name,
-                            tf!(
-                                "output.depends_on_count",
-                                package.workspace_dependencies.len()
-                            )
+                            tf!("output.depends_on_count", package.workspace_dependencies.len())
                         ));
                         for dep in &package.workspace_dependencies {
                             Logger::info(format!("    {} {}", icons::DEPENDENCY, dep));
@@ -197,10 +172,7 @@ fn print_table_format(
                 }
 
                 if verbose {
-                    Logger::info(format!(
-                        "    {}",
-                        tf!("output.path", package.folder.display())
-                    ));
+                    Logger::info(format!("    {}", tf!("output.path", package.folder.display())));
                     Logger::info(format!("    {}", tf!("output.version", package.version)));
                     if !package.scripts.is_empty() {
                         let scripts: Vec<String> = package.scripts.keys().cloned().collect();
@@ -214,23 +186,11 @@ fn print_table_format(
 
     // 包详情（仅在详细模式下）
     if verbose {
-        Logger::info(format!(
-            "{} {}",
-            icons::PACKAGE,
-            t!("output.package_details")
-        ));
+        Logger::info(format!("{} {}", icons::PACKAGE, t!("output.package_details")));
         Logger::info("───────────────────────────────────────");
         for package in &result.packages {
-            Logger::info(format!(
-                "{} {} v{}",
-                icons::PACKAGE,
-                package.name,
-                package.version
-            ));
-            Logger::info(format!(
-                "  {}",
-                tf!("output.path", package.folder.display())
-            ));
+            Logger::info(format!("{} {} v{}", icons::PACKAGE, package.name, package.version));
+            Logger::info(format!("  {}", tf!("output.path", package.folder.display())));
 
             if !package.dependencies.is_empty() {
                 Logger::info(format!(

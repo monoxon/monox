@@ -50,14 +50,10 @@ pub async fn run(args: RunArgs) -> Result<()> {
             if package_names.is_empty() {
                 anyhow::bail!(t!("run.empty_packages_list"));
             }
-            executor
-                .execute_packages(&package_names, &args.command)
-                .await
+            executor.execute_packages(&package_names, &args.command).await
         }
         (false, Some(package_name), None) => {
-            executor
-                .execute(&package_name, &args.command, Some(false))
-                .await
+            executor.execute(&package_name, &args.command, Some(false)).await
         }
         (false, None, None) => anyhow::bail!(t!("run.missing_package_or_all")),
     }

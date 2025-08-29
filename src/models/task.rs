@@ -164,11 +164,7 @@ impl Task {
 
     /// 完成执行
     pub fn complete(&mut self, result: TaskResult) {
-        self.status = if result.success {
-            TaskStatus::Success
-        } else {
-            TaskStatus::Failed
-        };
+        self.status = if result.success { TaskStatus::Success } else { TaskStatus::Failed };
         self.completed_at = Some(SystemTime::now());
         self.result = Some(result);
     }
@@ -177,10 +173,7 @@ impl Task {
         let workspace_root = Config::get_workspace_root();
 
         let package_json = PackageJson::from_file(
-            &workspace_root
-                .to_path_buf()
-                .join(self.package_path.as_str())
-                .to_string_lossy(),
+            &workspace_root.to_path_buf().join(self.package_path.as_str()).to_string_lossy(),
         );
         package_json.has_script(script_name)
     }
@@ -201,10 +194,7 @@ impl Task {
 
     /// 判断是否已完成
     pub fn is_completed(&self) -> bool {
-        matches!(
-            self.status,
-            TaskStatus::Success | TaskStatus::Failed | TaskStatus::Skipped
-        )
+        matches!(self.status, TaskStatus::Success | TaskStatus::Failed | TaskStatus::Skipped)
     }
 
     /// 判断是否成功
@@ -221,23 +211,11 @@ impl Task {
 impl TaskResult {
     /// 创建成功结果
     pub fn success(stdout: String, duration: Duration) -> Self {
-        Self {
-            exit_code: 0,
-            stdout,
-            stderr: String::new(),
-            duration,
-            success: true,
-        }
+        Self { exit_code: 0, stdout, stderr: String::new(), duration, success: true }
     }
 
     /// 创建失败结果
     pub fn failure(exit_code: i32, stdout: String, stderr: String, duration: Duration) -> Self {
-        Self {
-            exit_code,
-            stdout,
-            stderr,
-            duration,
-            success: false,
-        }
+        Self { exit_code, stdout, stderr, duration, success: false }
     }
 }

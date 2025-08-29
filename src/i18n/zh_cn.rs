@@ -293,7 +293,7 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("runner.successful_tasks", "成功任务数: {}"),
     ("runner.failed_tasks", "失败任务数: {}"),
     ("runner.skipped_tasks", "跳过任务数: {}"),
-            ("runner.processing_packages", "正在处理包:"),
-        ("runner.more_packages", "  ... 还有 {} 个包"),
-        ("runner.stage_complete", "所有阶段完成 {}/{}"),
+    ("runner.processing_packages", "正在处理包:"),
+    ("runner.more_packages", "  ... 还有 {} 个包"),
+    ("runner.stage_complete", "所有阶段完成 {}/{}"),
 ];

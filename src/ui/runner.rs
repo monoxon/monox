@@ -28,6 +28,8 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use crate::ui::summary::render_execution_summary;
+
 /// 任务执行状态
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStatus {
@@ -241,10 +243,8 @@ impl RunnerUI {
 
         // 自动更新 spinner 帧（基于时间）
         let now = SystemTime::now();
-        let elapsed_ms = now
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
-            .as_millis();
+        let elapsed_ms =
+            now.duration_since(UNIX_EPOCH).unwrap_or(Duration::from_secs(0)).as_millis();
         self.spinner_frame = ((elapsed_ms / 100) % 8) as usize;
 
         // 重新渲染
@@ -384,9 +384,7 @@ impl RunnerUI {
 
     /// 检查是否有正在运行的任务
     fn has_running_tasks(&self) -> bool {
-        self.tasks
-            .values()
-            .any(|task| task.status == TaskStatus::Running)
+        self.tasks.values().any(|task| task.status == TaskStatus::Running)
     }
 
     /// 启动自动刷新定时器
@@ -470,12 +468,7 @@ impl RunnerUI {
         Logger::info(format!(
             "  {} {}",
             icons::SUCCESS,
-            tf!(
-                "runner.task_complete",
-                task.name,
-                task.package,
-                duration.as_millis()
-            )
+            tf!("runner.task_complete", task.name, task.package, duration.as_millis())
         ));
     }
 
@@ -507,24 +500,11 @@ impl RunnerUI {
 
     /// 渲染执行总结
     pub fn render_summary(&mut self) {
-        use crate::ui::summary::render_execution_summary;
-
         let total_tasks = self.tasks.len();
-        let successful_tasks = self
-            .tasks
-            .values()
-            .filter(|t| t.status == TaskStatus::Success)
-            .count();
-        let failed_tasks = self
-            .tasks
-            .values()
-            .filter(|t| t.status == TaskStatus::Failed)
-            .count();
-        let skipped_tasks = self
-            .tasks
-            .values()
-            .filter(|t| t.status == TaskStatus::Skipped)
-            .count();
+        let successful_tasks =
+            self.tasks.values().filter(|t| t.status == TaskStatus::Success).count();
+        let failed_tasks = self.tasks.values().filter(|t| t.status == TaskStatus::Failed).count();
+        let skipped_tasks = self.tasks.values().filter(|t| t.status == TaskStatus::Skipped).count();
 
         // 刷新模式需要先清屏，然后显示完整的最终状态
         if self.supports_refresh && !self.verbose {
@@ -561,11 +541,7 @@ impl RunnerUI {
             "{} ✓ {} {}",
             Logger::get_prefix("INFO"),
             final_progress_bar,
-            tf!(
-                "runner.stage_complete",
-                self.total_stages,
-                self.total_stages
-            )
+            tf!("runner.stage_complete", self.total_stages, self.total_stages)
         );
 
         let _ = io::stdout().flush();

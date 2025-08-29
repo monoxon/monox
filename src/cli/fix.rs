@@ -443,10 +443,7 @@ fn print_fix_results_table(results: &[FixResult]) -> Result<()> {
 
     let mut packages: HashMap<String, Vec<&FixResult>> = HashMap::new();
     for result in results {
-        packages
-            .entry(result.package.clone())
-            .or_default()
-            .push(result);
+        packages.entry(result.package.clone()).or_default().push(result);
     }
 
     for (package_name, package_results) in packages {

@@ -135,9 +135,7 @@ impl PackageJson {
 
     /// 获取包名，如果没有则使用目录名
     pub fn get_name(&self, fallback_name: &str) -> String {
-        self.name
-            .clone()
-            .unwrap_or_else(|| fallback_name.to_string())
+        self.name.clone().unwrap_or_else(|| fallback_name.to_string())
     }
 
     /// 获取版本，如果没有则使用默认版本

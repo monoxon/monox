@@ -87,26 +87,10 @@ pub fn render_execution_summary(
         "".to_string(),
         TextStyles::bold(&t!("runner.execution_summary")),
         "═══════════════════════════════════════".to_string(),
-        format!(
-            "{} {}",
-            icons::PACKAGE,
-            tf!("runner.total_tasks", total_tasks)
-        ),
-        format!(
-            "{} {}",
-            icons::SUCCESS,
-            tf!("runner.successful_tasks", successful_tasks)
-        ),
-        format!(
-            "{} {}",
-            icons::ERROR,
-            tf!("runner.failed_tasks", failed_tasks)
-        ),
-        format!(
-            "{} {}",
-            icons::SKIP,
-            tf!("runner.skipped_tasks", skipped_tasks)
-        ),
+        format!("{} {}", icons::PACKAGE, tf!("runner.total_tasks", total_tasks)),
+        format!("{} {}", icons::SUCCESS, tf!("runner.successful_tasks", successful_tasks)),
+        format!("{} {}", icons::ERROR, tf!("runner.failed_tasks", failed_tasks)),
+        format!("{} {}", icons::SKIP, tf!("runner.skipped_tasks", skipped_tasks)),
     ];
 
     // 如果有执行时长信息，添加到汇总中
@@ -158,12 +142,7 @@ pub fn print_circular_dependencies_table(
 fn print_detailed_cycle(cycle: &[String]) {
     for (i, package) in cycle.iter().enumerate() {
         let next_package = &cycle[(i + 1) % cycle.len()];
-        Logger::info(tf!(
-            "check.circular.cycle_detail",
-            icons::ARROW,
-            package,
-            next_package
-        ));
+        Logger::info(tf!("check.circular.cycle_detail", icons::ARROW, package, next_package));
     }
 }
 
@@ -310,11 +289,7 @@ fn print_simple_conflict(conflict: &VersionConflict) {
 
     for (version, usages) in version_groups {
         let packages: Vec<String> = usages.iter().map(|u| u.package.clone()).collect();
-        Logger::info(tf!(
-            "check.versions.version_group",
-            version,
-            packages.join(", ")
-        ));
+        Logger::info(tf!("check.versions.version_group", version, packages.join(", ")));
     }
 }
 
@@ -322,10 +297,7 @@ fn print_simple_conflict(conflict: &VersionConflict) {
 fn group_by_version(usages: &[ConflictUsage]) -> HashMap<String, Vec<&ConflictUsage>> {
     let mut unique_versions: HashMap<String, Vec<&ConflictUsage>> = HashMap::new();
     for usage in usages {
-        unique_versions
-            .entry(usage.resolved_version.clone())
-            .or_default()
-            .push(usage);
+        unique_versions.entry(usage.resolved_version.clone()).or_default().push(usage);
     }
     unique_versions
 }
@@ -333,11 +305,6 @@ fn group_by_version(usages: &[ConflictUsage]) -> HashMap<String, Vec<&ConflictUs
 /// 实时显示发现的过期包
 pub fn print_outdated_package_realtime(dep_name: &str, current: &str, latest: &str, verbose: bool) {
     if verbose {
-        Logger::warn(tf!(
-            "check.outdated.found_realtime",
-            Colors::info(dep_name),
-            current,
-            latest
-        ));
+        Logger::warn(tf!("check.outdated.found_realtime", Colors::info(dep_name), current, latest));
     }
 }
