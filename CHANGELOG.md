@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.8] - 2025-08-29
+
+### ⚙️ Miscellaneous Tasks
+
+- Sync version
+
 ## [0.4.1] - 2025-08-29
 
 ### ⚙️ Miscellaneous Tasks
 
 - 修复更新 optionalDependencies
+- Release monox version 0.4.1
 
 ## [0.4.0] - 2025-08-29
 
