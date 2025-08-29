@@ -506,7 +506,7 @@ impl TaskExecutor {
                 .block_on(async { scheduler.execute_batch(tasks).await })
         });
 
-        // 处理执行结果并收集统计
+        // 处理执行结果（不再重复统计，因为 execute_task 内部已经统计了）
         let mut success_count = 0;
         let mut failed_count = 0;
         let mut cancelled_count = 0;
@@ -519,31 +519,19 @@ impl TaskExecutor {
                     if self.config.verbose {
                         Logger::success(tf!("executor.task_concurrent_success", &task_id));
                     }
-
-                    // 更新统计
-                    if let Some(collector) = &stats_collector {
-                        collector.lock().unwrap().successful += 1;
-                    }
+                    // 注意：不再重复统计，execute_task 内部已经统计了
                 }
                 SchedulerTaskResult::Failed(err) => {
                     failed_count += 1;
                     failed_tasks.push(format!("{}: {}", task_id, err));
                     Logger::error(tf!("executor.task_concurrent_failed", &task_id, &err));
-
-                    // 更新统计
-                    if let Some(collector) = &stats_collector {
-                        collector.lock().unwrap().failed += 1;
-                    }
+                    // 注意：不再重复统计，execute_task 内部已经统计了
                 }
                 SchedulerTaskResult::Timeout => {
                     failed_count += 1;
                     failed_tasks.push(format!("{}: 执行超时", task_id));
                     Logger::error(tf!("executor.task_concurrent_timeout", &task_id));
-
-                    // 更新统计
-                    if let Some(collector) = &stats_collector {
-                        collector.lock().unwrap().failed += 1;
-                    }
+                    // 注意：不再重复统计，execute_task 内部已经统计了
                 }
                 SchedulerTaskResult::Cancelled => {
                     cancelled_count += 1;
