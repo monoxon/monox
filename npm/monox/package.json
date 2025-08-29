@@ -32,6 +32,9 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
+  "bin": {
+    "monox": ".bin/monox"
+  },
   "files": [
     "README.md",
     "README.zh.md",
