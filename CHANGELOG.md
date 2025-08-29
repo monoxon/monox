@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.7] - 2025-08-29
+
+### ⚙️ Miscellaneous Tasks
+
+- Npm 配置修复
+
 ## [0.4.6] - 2025-08-29
 
 ### ⚙️ Miscellaneous Tasks
 
 - Node 24 有执行文件权限问题修复
+- Release monox version 0.4.6
 
 ## [0.4.5] - 2025-08-29
 
