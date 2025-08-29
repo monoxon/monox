@@ -32,9 +32,6 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
-  "bin": {
-    "monox": "monox"
-  },
   "files": [
     "monox"
   ],
