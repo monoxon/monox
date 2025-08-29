@@ -26,6 +26,10 @@ pub struct RunArgs {
     #[arg(short = 'c', long)]
     pub command: String,
 
+    /// 执行脚本后的命令
+    #[arg(long)]
+    pub post_command: Option<String>,
+
     /// 目标包名列表 (如果不指定，将运行所有包含该脚本的包) - no must
     #[arg(short = 'p', long)]
     pub package: Option<String>,
@@ -45,15 +49,15 @@ pub async fn run(args: RunArgs) -> Result<()> {
     let executor = TaskExecutor::new_from_config()?;
     match (args.all, args.package, args.packages) {
         // 优先级：all > packages > package
-        (true, _, _) => executor.execute("*", &args.command, Some(true)).await,
+        (true, _, _) => executor.execute("*", &args.command, &args.post_command, Some(true)).await,
         (false, _, Some(package_names)) => {
             if package_names.is_empty() {
                 anyhow::bail!(t!("run.empty_packages_list"));
             }
-            executor.execute_packages(&package_names, &args.command).await
+            executor.execute_packages(&package_names, &args.command, &args.post_command).await
         }
         (false, Some(package_name), None) => {
-            executor.execute(&package_name, &args.command, Some(false)).await
+            executor.execute(&package_name, &args.command, &args.post_command, Some(false)).await
         }
         (false, None, None) => anyhow::bail!(t!("run.missing_package_or_all")),
     }

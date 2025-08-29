@@ -247,6 +247,7 @@ pub const TRANSLATIONS: &[(&str, &str)] = &[
     ("executor.task_concurrent_timeout", "Task timed out: {}"),
     ("executor.task_concurrent_cancelled", "Task cancelled: {}"),
     ("executor.command_run", "Running command: {} {}"),
+    ("executor.command_run_post", "Running post command: {} {}"),
     ("executor.command_failed", "Command execution failed: {}"),
     ("executor.command_stdout", "Standard output: {}"),
     ("executor.command_stderr", "Standard error: {}"),

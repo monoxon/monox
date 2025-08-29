@@ -74,6 +74,9 @@ pub struct TaskConfig {
     pub desc: Option<String>,
     /// 执行的命令
     pub command: String,
+    /// 执行后的命令
+    #[serde(default)]
+    pub post_command: Option<String>,
 }
 
 /// 执行配置
@@ -322,6 +325,7 @@ impl Config {
                 packages: None,
                 desc: Some("构建所有包".to_string()),
                 command: "npm run build".to_string(),
+                post_command: None,
             },
             TaskConfig {
                 name: "test".to_string(),
@@ -329,6 +333,7 @@ impl Config {
                 packages: None,
                 desc: Some("运行测试".to_string()),
                 command: "npm run test".to_string(),
+                post_command: None,
             },
             TaskConfig {
                 name: "lint".to_string(),
@@ -336,6 +341,7 @@ impl Config {
                 packages: None,
                 desc: Some("代码检查".to_string()),
                 command: "npm run lint".to_string(),
+                post_command: None,
             },
         ];
 

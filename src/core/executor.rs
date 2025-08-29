@@ -214,18 +214,24 @@ impl TaskExecutor {
         &self,
         package_name: &str,
         command: &str,
+        post_command: &Option<String>,
         all: Option<bool>,
     ) -> Result<()> {
         match (all.unwrap_or(false), package_name) {
             // all 为 true 时，执行所有包
-            (true, _) => self.execute_all_packages(command).await,
+            (true, _) => self.execute_all_packages(command, post_command).await,
             // all 为 false，且有 package_name 时，执行单包
-            (false, pkg_name) => self.execute_single_package(pkg_name, command).await,
+            (false, pkg_name) => self.execute_single_package(pkg_name, command, post_command).await,
         }
     }
 
     /// 执行多个指定包（基于包名列表）
-    pub async fn execute_packages(&self, package_names: &[String], command: &str) -> Result<()> {
+    pub async fn execute_packages(
+        &self,
+        package_names: &[String],
+        command: &str,
+        post_command: &Option<String>,
+    ) -> Result<()> {
         // 获取工作区根目录（从全局配置中获取）
         let workspace_root = Config::get_workspace_root();
         // 创建分析器，获取包信息
@@ -259,11 +265,15 @@ impl TaskExecutor {
 
         Logger::info(tf!("run.found_executable_packages", executable_count, command));
 
-        self.execute_stages(&analysis_result.stages, command).await
+        self.execute_stages(&analysis_result.stages, command, post_command).await
     }
 
     /// 执行所有包（all = true）
-    async fn execute_all_packages(&self, command: &str) -> Result<()> {
+    async fn execute_all_packages(
+        &self,
+        command: &str,
+        post_command: &Option<String>,
+    ) -> Result<()> {
         // 获取工作区根目录（从全局配置中获取）
         let workspace_root = Config::get_workspace_root();
         // 创建分析器，获取包信息
@@ -295,11 +305,16 @@ impl TaskExecutor {
 
         Logger::info(tf!("run.found_executable_packages", executable_packages.len(), command));
 
-        self.execute_stages(&analysis_result.stages, command).await
+        self.execute_stages(&analysis_result.stages, command, post_command).await
     }
 
     /// 执行单个包
-    async fn execute_single_package(&self, package_name: &str, command: &str) -> Result<()> {
+    async fn execute_single_package(
+        &self,
+        package_name: &str,
+        command: &str,
+        post_command: &Option<String>,
+    ) -> Result<()> {
         // 获取工作区根目录（从全局配置中获取）
         let workspace_root = Config::get_workspace_root();
         // 创建分析器，获取包信息
@@ -329,7 +344,7 @@ impl TaskExecutor {
 
         Logger::info(tf!("run.found_executable_packages", executable_count, command));
 
-        self.execute_stages(&analysis_result.stages, command).await
+        self.execute_stages(&analysis_result.stages, command, post_command).await
     }
 
     /// 执行阶段任务
@@ -337,6 +352,7 @@ impl TaskExecutor {
         &self,
         stages: &Vec<Vec<WorkspacePackage>>,
         command: &str,
+        post_command: &Option<String>,
     ) -> Result<()> {
         let verbose = self.config.verbose;
 
@@ -388,7 +404,14 @@ impl TaskExecutor {
                 drop(ui_lock); // 释放锁
             }
 
-            self.execute_single_stage(stage, command, ui.clone(), stats_collector.clone()).await?;
+            self.execute_single_stage(
+                stage,
+                command,
+                post_command,
+                ui.clone(),
+                stats_collector.clone(),
+            )
+            .await?;
         }
 
         // 显示执行总结
@@ -417,6 +440,7 @@ impl TaskExecutor {
         &self,
         stage: &Vec<WorkspacePackage>,
         command: &str,
+        post_command: &Option<String>,
         ui: Option<Arc<Mutex<RunnerUI>>>,
         stats_collector: Option<Arc<Mutex<ExecutionStats>>>,
     ) -> Result<()> {
@@ -525,6 +549,27 @@ impl TaskExecutor {
                     cancelled_count += 1;
                     Logger::warn(tf!("executor.task_concurrent_cancelled", &task_id));
                     // 取消的任务不计入统计中
+                }
+            }
+        }
+
+        // 执行 post command, 仅执行一次
+        if let Some(post_command) = &post_command {
+            let package_manager = Config::get_package_manager().as_str();
+            let mut command = Command::new(package_manager);
+            command.arg(post_command);
+
+            let output = command.output().context(tf!("executor.command_failed", post_command))?;
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+            // 在详细模式下输出命令输出
+            if Config::get_verbose() {
+                if !stdout.is_empty() {
+                    Logger::info(tf!("executor.command_stdout", &stdout));
+                }
+                if !stderr.is_empty() {
+                    Logger::warn(tf!("executor.command_stderr", &stderr));
                 }
             }
         }

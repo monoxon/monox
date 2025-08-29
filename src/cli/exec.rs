@@ -56,17 +56,24 @@ pub async fn exec(args: ExecArgs) -> Result<()> {
             anyhow::bail!(t!("exec.empty_packages_list"));
         }
         Logger::info(tf!("exec.executing_packages", packages.join(", ")));
-        executor.execute_packages(packages, &task_config.command).await
+        executor.execute_packages(packages, &task_config.command, &task_config.post_command).await
     } else if !task_config.pkg_name.is_empty() {
         // 如果有 pkg_name 且不为空，按原逻辑处理
         let is_all_packages = task_config.pkg_name == "*";
 
         if is_all_packages {
             Logger::info(t!("exec.executing_all_packages"));
-            executor.execute("*", &task_config.command, Some(true)).await
+            executor.execute("*", &task_config.command, &task_config.post_command, Some(true)).await
         } else {
             Logger::info(tf!("exec.executing_package", &task_config.pkg_name));
-            executor.execute(&task_config.pkg_name, &task_config.command, Some(false)).await
+            executor
+                .execute(
+                    &task_config.pkg_name,
+                    &task_config.command,
+                    &task_config.post_command,
+                    Some(false),
+                )
+                .await
         }
     } else {
         // 如果既没有 packages 也没有 pkg_name，报错
