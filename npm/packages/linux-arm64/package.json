@@ -1,6 +1,6 @@
 {
   "name": "@monoxon/linux-arm64",
-  "version": "0.4.1",
+  "version": "0.4.4",
   "description": "Lightweight monorepo build tool written in Rust - Linux ARM64 binary",
   "keywords": [
     "monorepo",
@@ -32,6 +32,9 @@
   },
   "license": "MIT",
   "author": "xiaoYown",
+  "bin": {
+    "monox": "monox"
+  },
   "files": [
     "monox"
   ],
