@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.6] - 2025-08-29
+
+### ⚙️ Miscellaneous Tasks
+
+- Node 24 有执行文件权限问题修复
+
 ## [0.4.5] - 2025-08-29
 
 ### ⚙️ Miscellaneous Tasks
 
 - Npm 自身机制无法直接运行二进制文件
+- Release monox version 0.4.5
 
 ## [0.4.1] - 2025-08-29
 
