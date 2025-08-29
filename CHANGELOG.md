@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2025-08-29
+
+### ⚙️ Miscellaneous Tasks
+
+- 移除废弃 script
+
 ## [0.4.2] - 2025-08-29
 
 ### ⚙️ Miscellaneous Tasks
 
 - 尝试使用 npm 自身机制运行二进制文件
+- Release monox version 0.4.2
 
 ## [0.4.1] - 2025-08-29
 
