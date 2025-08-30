@@ -209,11 +209,35 @@ dependencies = [
 ]
 description = "Build release version for Linux"
 
+# Publish npm packages
+
+[tasks.publish-main]
+scritp = '''
+cd ./npm/monox
+npm publish
+'''
+
+[tasks.publish-macos]
+scritp = '''
+cd ./npm/packages/darwin-arm64
+npm publish
+cd ../darwin-x64
+npm publish
+'''
+
+[tasks.publish-linux]
+scritp = '''
+cd ./npm/packages/linux-arm64
+npm publish
+cd ../linux-x64
+npm publish
+'''
+
 # Build all platforms
 
-[tasks.build-all-platforms]
-description = "Build release version for all platforms"
-dependencies = [
-  "build-macos",
-  "build-linux",
-]
+# [tasks.build-all-platforms]
+# description = "Build release version for all platforms"
+# dependencies = [
+#   "build-macos",
+#   "build-linux",
+# ]
