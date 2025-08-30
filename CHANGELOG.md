@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.12] - 2025-08-30
+
+### ⚙️ Miscellaneous Tasks
+
+- 静态链接配置修改到 cargo config.toml 中
+
 ## [0.4.11] - 2025-08-30
 
 ### ⚙️ Miscellaneous Tasks
 
 - 添加静态链接配置
+- Release monox version 0.4.11
 
 ## [0.4.10] - 2025-08-30
 
