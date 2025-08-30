@@ -212,13 +212,13 @@ description = "Build release version for Linux"
 # Publish npm packages
 
 [tasks.publish-main]
-scritp = '''
+script = '''
 cd ./npm/monox
 npm publish
 '''
 
 [tasks.publish-macos]
-scritp = '''
+script = '''
 cd ./npm/packages/darwin-arm64
 npm publish
 cd ../darwin-x64
@@ -226,7 +226,7 @@ npm publish
 '''
 
 [tasks.publish-linux]
-scritp = '''
+script = '''
 cd ./npm/packages/linux-arm64
 npm publish
 cd ../linux-x64
