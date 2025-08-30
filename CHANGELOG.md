@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.10] - 2025-08-30
+
+### 📚 Documentation
+
+- Update
+
+### ⚙️ Miscellaneous Tasks
+
+- 修复 makefile
+- 优化网络配置项
+- 更新 makefile
+
 ## [0.4.9] - 2025-08-30
 
 ### ⚙️ Miscellaneous Tasks
@@ -9,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Sync version
 - Release monox version 0.4.8
 - Makefile 添加各平台发布任务
+- Release monox version 0.4.9
 
 ## [0.4.1] - 2025-08-29
 
