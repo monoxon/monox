@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.11] - 2025-08-30
+
+### ⚙️ Miscellaneous Tasks
+
+- 添加静态链接配置
+
 ## [0.4.10] - 2025-08-30
 
 ### 📚 Documentation
@@ -13,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - 修复 makefile
 - 优化网络配置项
 - 更新 makefile
+- Release monox version 0.4.10
 
 ## [0.4.9] - 2025-08-30
 
