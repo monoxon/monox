@@ -37,9 +37,6 @@ cargo build --release
 
 # 将可执行文件添加到 PATH
 cp target/release/monox /usr/local/bin/
-
-# 未正常下载二进制文件
-pnpm monox-install
 ```
 
 ### 初始化配置
