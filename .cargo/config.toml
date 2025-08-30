@@ -1,0 +1,14 @@
+# Linux 静态链接配置
+# 启用 crt-static 特性，生成完全静态链接的二进制文件
+# 这样做的原因：
+# 1. 解决 glibc 版本兼容性问题 - 不同 Linux 发行版使用不同版本的 glibc
+#    Ubuntu 18.04: glibc 2.27, Ubuntu 20.04: glibc 2.31, CentOS 7: glibc 2.17
+# 2. 简化部署 - 生成单个可执行文件，无需安装额外的系统依赖
+# 3. NPM 包分发 - 用户安装后可以直接运行，无需担心系统环境差异
+# 4. 容器化友好 - 可以使用 scratch 或 alpine 等最小化基础镜像
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = ["-C", "target-feature=+crt-static"]

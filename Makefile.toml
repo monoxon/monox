@@ -133,7 +133,7 @@ description = "Setup Linux aarch64 target"
 dependencies = ["setup-linux-x86_64"]
 description = "Build static release version for x86_64-unknown-linux-gnu"
 script = '''
-RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-gnu --release
+cargo build --target x86_64-unknown-linux-gnu --release
 cp target/x86_64-unknown-linux-gnu/release/monox npm/packages/linux-x64/monox
 cp README.md npm/packages/linux-x64/README.md
 cp README.zh.md npm/packages/linux-x64/README.zh.md
@@ -144,7 +144,7 @@ echo "✅ Copied static binary to npm/packages/linux-x64/monox"
 dependencies = ["setup-linux-aarch64"]
 description = "Build static release version for aarch64-unknown-linux-gnu"
 script = '''
-RUSTFLAGS="-C target-feature=+crt-static" cargo build --target aarch64-unknown-linux-gnu --release
+cargo build --target aarch64-unknown-linux-gnu --release
 cp target/aarch64-unknown-linux-gnu/release/monox npm/packages/linux-arm64/monox
 cp README.md npm/packages/linux-arm64/README.md
 cp README.zh.md npm/packages/linux-arm64/README.zh.md
