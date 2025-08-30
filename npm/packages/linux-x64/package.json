@@ -1,6 +1,6 @@
 {
   "name": "@monoxon/linux-x64",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Lightweight monorepo build tool written in Rust - Linux x64 binary",
   "keywords": [
     "monorepo",

@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.4.8] - 2025-08-29
+## [0.4.9] - 2025-08-30
 
 ### ⚙️ Miscellaneous Tasks
 
 - Sync version
+- Release monox version 0.4.8
+- Makefile 添加各平台发布任务
 
 ## [0.4.1] - 2025-08-29
 
