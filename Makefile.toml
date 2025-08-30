@@ -182,7 +182,6 @@ cargo build --target aarch64-apple-darwin --release
 cp target/aarch64-apple-darwin/release/monox npm/packages/darwin-arm64/monox
 cp README.md npm/packages/darwin-arm64/README.md
 cp README.zh.md npm/packages/darwin-arm64/README.zh.md
-cp target/aarch64-apple-darwin/release/monox npm/monox/monox
 cp README.md npm/monox/README.md
 cp README.zh.md npm/monox/README.zh.md
 echo "✅ Copied binary to npm/packages/darwin-arm64/monox"
